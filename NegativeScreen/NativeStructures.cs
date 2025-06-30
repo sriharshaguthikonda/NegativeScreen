@@ -27,7 +27,7 @@ namespace NegativeScreen
 	/// <summary>
 	/// Magnifier Window Styles
 	/// </summary>
-	internal enum MagnifierStyle : int
+	public enum MagnifierStyle : int
 	{
 		MS_SHOWMAGNIFIEDCURSOR = 0x0001,
 		MS_CLIPAROUNDCURSOR = 0x0002,
@@ -38,7 +38,7 @@ namespace NegativeScreen
 	/// Magnification matrix
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential)]
-	internal struct Transformation
+	public struct Transformation
 	{
 		public float m00;
 		public float m01;
@@ -63,161 +63,56 @@ namespace NegativeScreen
 	/// Transformation matrix
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential)]
-	internal struct ColorEffect
+	public struct ColorEffect
 	{
-		public float transform00;
-		public float transform01;
-		public float transform02;
-		public float transform03;
-		public float transform04;
-		public float transform10;
-		public float transform11;
-		public float transform12;
-		public float transform13;
-		public float transform14;
-		public float transform20;
-		public float transform21;
-		public float transform22;
-		public float transform23;
-		public float transform24;
-		public float transform30;
-		public float transform31;
-		public float transform32;
-		public float transform33;
-		public float transform34;
-		public float transform40;
-		public float transform41;
-		public float transform42;
-		public float transform43;
-		public float transform44;
+		// 25 floats, row-major (R-row, G-row, B-row, A-row, W-row)
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = 25)]
+		public float[] transform;
 
 		public ColorEffect(float[,] matrix)
 		{
-			transform00 = matrix[0, 0];
-			transform10 = matrix[1, 0];
-			transform20 = matrix[2, 0];
-			transform30 = matrix[3, 0];
-			transform40 = matrix[4, 0];
-			transform01 = matrix[0, 1];
-			transform11 = matrix[1, 1];
-			transform21 = matrix[2, 1];
-			transform31 = matrix[3, 1];
-			transform41 = matrix[4, 1];
-			transform02 = matrix[0, 2];
-			transform12 = matrix[1, 2];
-			transform22 = matrix[2, 2];
-			transform32 = matrix[3, 2];
-			transform42 = matrix[4, 2];
-			transform03 = matrix[0, 3];
-			transform13 = matrix[1, 3];
-			transform23 = matrix[2, 3];
-			transform33 = matrix[3, 3];
-			transform43 = matrix[4, 3];
-			transform04 = matrix[0, 4];
-			transform14 = matrix[1, 4];
-			transform24 = matrix[2, 4];
-			transform34 = matrix[3, 4];
-			transform44 = matrix[4, 4];
+			if (matrix == null)
+				throw new ArgumentNullException(nameof(matrix));
+				
+			if (matrix.GetLength(0) != 5 || matrix.GetLength(1) != 5)
+				throw new ArgumentException("Must be a 5×5 matrix", nameof(matrix));
+
+			transform = new float[25];
+			for (int r = 0; r < 5; r++)
+				for (int c = 0; c < 5; c++)
+					transform[r * 5 + c] = matrix[r, c];
 		}
 
-		/// <summary>
-		/// 5*5 matrix
-		/// </summary>
-		/// <param name="matrix"></param>
-		public void SetMatrix(float[,] matrix)
+		public override string ToString()
 		{
-			this.transform00 = matrix[0, 0];
-			this.transform10 = matrix[1, 0];
-			this.transform20 = matrix[2, 0];
-			this.transform30 = matrix[3, 0];
-			this.transform40 = matrix[4, 0];
-			this.transform01 = matrix[0, 1];
-			this.transform11 = matrix[1, 1];
-			this.transform21 = matrix[2, 1];
-			this.transform31 = matrix[3, 1];
-			this.transform41 = matrix[4, 1];
-			this.transform02 = matrix[0, 2];
-			this.transform12 = matrix[1, 2];
-			this.transform22 = matrix[2, 2];
-			this.transform32 = matrix[3, 2];
-			this.transform42 = matrix[4, 2];
-			this.transform03 = matrix[0, 3];
-			this.transform13 = matrix[1, 3];
-			this.transform23 = matrix[2, 3];
-			this.transform33 = matrix[3, 3];
-			this.transform43 = matrix[4, 3];
-			this.transform04 = matrix[0, 4];
-			this.transform14 = matrix[1, 4];
-			this.transform24 = matrix[2, 4];
-			this.transform34 = matrix[3, 4];
-			this.transform44 = matrix[4, 4];
-		}
-
-		/// <summary>
-		/// 5*5 matrix
-		/// </summary>
-		/// <param name="matrix"></param>
-		public float[,] GetMatrix()
-		{
-			float[,] matrix = new float[5, 5];
-			matrix[0, 0] = this.transform00;
-			matrix[1, 0] = this.transform10;
-			matrix[2, 0] = this.transform20;
-			matrix[3, 0] = this.transform30;
-			matrix[4, 0] = this.transform40;
-			matrix[0, 1] = this.transform01;
-			matrix[1, 1] = this.transform11;
-			matrix[2, 1] = this.transform21;
-			matrix[3, 1] = this.transform31;
-			matrix[4, 1] = this.transform41;
-			matrix[0, 2] = this.transform02;
-			matrix[1, 2] = this.transform12;
-			matrix[2, 2] = this.transform22;
-			matrix[3, 2] = this.transform32;
-			matrix[4, 2] = this.transform42;
-			matrix[0, 3] = this.transform03;
-			matrix[1, 3] = this.transform13;
-			matrix[2, 3] = this.transform23;
-			matrix[3, 3] = this.transform33;
-			matrix[4, 3] = this.transform43;
-			matrix[0, 4] = this.transform04;
-			matrix[1, 4] = this.transform14;
-			matrix[2, 4] = this.transform24;
-			matrix[3, 4] = this.transform34;
-			matrix[4, 4] = this.transform44;
-			return matrix;
+			return "ColorEffect[" + string.Join(",", transform) + "]";
 		}
 	}
 
 	/// <summary>
 	/// A Wrapper for a RECT struct
 	/// </summary>
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "RECT"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
 	[StructLayout(LayoutKind.Sequential)]
-	internal struct RECT
+	public struct RECT
 	{
 		/// <summary>
 		/// Position of left edge
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
 		public int left;
 
 		/// <summary>
 		/// Position of top edge
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
 		public int top;
 
 		/// <summary>
 		/// Position of right edge
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
 		public int right;
 
 		/// <summary>
 		/// Position of bottom edge
 		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
 		public int bottom;
 
 		public RECT(int left, int top, int right, int bottom)
@@ -238,8 +133,11 @@ namespace NegativeScreen
 
 		public override bool Equals(object obj)
 		{
-			RECT r = (RECT)obj;
-			return (r.left == left && r.right == right && r.top == top && r.bottom == bottom);
+			if (obj is RECT r)
+			{
+				return (r.left == left && r.right == right && r.top == top && r.bottom == bottom);
+			}
+			return false;
 		}
 
 		public override int GetHashCode()
@@ -257,16 +155,14 @@ namespace NegativeScreen
 		{
 			return !(a == b);
 		}
-
 	}
-
 
 	/// <summary>
 	/// Specifies the style of the window being created
 	/// </summary>
 	[FlagsAttribute]
 	[Description("Specifies the style of the window being created")]
-	internal enum WindowStyles : int
+	public enum WindowStyles : int
 	{
 		/// <summary>
 		/// Creates an overlapped window. An overlapped window has a title bar and a border 
@@ -375,7 +271,7 @@ namespace NegativeScreen
 	///Common window styles
 	/// </summary>
 	[Description("Common window styles")]
-	internal enum CommonWindowStyles : int
+	public enum CommonWindowStyles : int
 	{
 		/// <summary>
 		///Creates an overlapped window. An overlapped window has a title bar and a border. Same as the WS_OVERLAPPED style. 
@@ -410,7 +306,7 @@ namespace NegativeScreen
 	}
 
 	[FlagsAttribute]
-	internal enum SetWindowPosFlags : int
+	public enum SetWindowPosFlags : int
 	{
 		SWP_NOSIZE = 1,
 		SWP_NOMOVE = 2,
@@ -430,7 +326,7 @@ namespace NegativeScreen
 	/// </summary>
 	[FlagsAttribute]
 	[Description("Specifies the extended style of the window")]
-	internal enum ExtendedWindowStyles : int
+	public enum ExtendedWindowStyles : int
 	{
 		/// <summary>
 		/// Creates a window that has a double border; the window can, optionally, 
@@ -553,7 +449,7 @@ namespace NegativeScreen
 	/// Common extended window styles
 	/// </summary>
 	[Description("Common extended window styles")]
-	internal enum CommonExtendedWindowStyles : int
+	public enum CommonExtendedWindowStyles : int
 	{
 		/// <summary>
 		/// Combines the WS_EX_CLIENTEDGE and WS_EX_WINDOWEDGE styles.
@@ -573,7 +469,7 @@ namespace NegativeScreen
 	/// </summary>
 	[FlagsAttribute]
 	[Description("Layered window flags")]
-	internal enum LayeredWindowAttributeFlags : int
+	public enum LayeredWindowAttributeFlags : int
 	{
 		/// <summary>
 		/// Use key as a transparency color
@@ -586,14 +482,14 @@ namespace NegativeScreen
 	}
 
 	[FlagsAttribute]
-	internal enum LayeredWindowUpdateFlags : int
+	public enum LayeredWindowUpdateFlags : int
 	{
 		ULW_COLORKEY = 0x00000001,
 		ULW_ALPHA = 0x00000002,
 		ULW_OPAQUE = 0x00000004
 	}
 
-	internal enum ShowWindowStyles : short
+	public enum ShowWindowStyles : short
 	{
 		SW_HIDE = 0,
 		SW_SHOWNORMAL = 1,
@@ -612,7 +508,7 @@ namespace NegativeScreen
 		SW_MAX = 11
 	}
 
-	internal enum WindowMessage : int
+	public enum WindowMessage : int
 	{
 		WM_NULL = 0x00,
 		WM_CREATE = 0x01,
@@ -853,7 +749,7 @@ namespace NegativeScreen
 	/// The keys that must be pressed in combination with the key specified by the uVirtKey parameter in order to generate the WM_HOTKEY message.
 	/// The fsModifiers parameter can be a combination of the following values.
 	/// </summary>
-	internal enum KeyModifiers : int
+	public enum KeyModifiers : int
 	{
 		NONE = 0,
 		/// <summary>
@@ -881,7 +777,7 @@ namespace NegativeScreen
 	}
 
 	[Flags]
-	internal enum DWMWINDOWATTRIBUTE : int
+	public enum DWMWINDOWATTRIBUTE : int
 	{
 		/// <summary>
 		/// Use with DwmGetWindowAttribute. Discovers whether non-client rendering is enabled.
@@ -958,7 +854,7 @@ namespace NegativeScreen
 		DWMWA_LAST,
 	}
 
-	internal enum DWMNCRENDERINGPOLICY
+	public enum DWMNCRENDERINGPOLICY
 	{
 		/// <summary>
 		/// The non-client rendering area is rendered based on the window style.
@@ -978,7 +874,7 @@ namespace NegativeScreen
 		DWMNCRP_LAST,
 	}
 
-	internal enum DWMFLIP3DWINDOWPOLICY
+	public enum DWMFLIP3DWINDOWPOLICY
 	{
 		/// <summary>
 		///  Use the window's style and visibility settings to determine whether to hide or include the window in Flip3D rendering.
@@ -998,4 +894,32 @@ namespace NegativeScreen
 		DWMFLIP3D_LAST,
 	}
 
+	public enum DwmWindowAttribute : uint
+	{
+		DWMWA_NCRENDERING_ENABLED = 1,
+		DWMWA_NCRENDERING_POLICY,
+		DWMWA_TRANSITIONS_FORCEDISABLED,
+		DWMWA_ALLOW_NCPAINT,
+		DWMWA_CAPTION_BUTTON_BOUNDS,
+		DWMWA_NONCLIENT_RTL_LAYOUT,
+		DWMWA_FORCE_ICONIC_REPRESENTATION,
+		DWMWA_FLIP3D_POLICY,
+		DWMWA_EXTENDED_FRAME_BOUNDS,
+		DWMWA_HAS_ICONIC_BITMAP,
+		DWMWA_DISALLOW_PEEK,
+		DWMWA_EXCLUDED_FROM_PEEK,
+		DWMWA_CLOAK,
+		DWMWA_CLOAKED,
+		DWMWA_FREEZE_REPRESENTATION,
+		DWMWA_PASSIVE_UPDATE_MODE,
+		DWMWA_USE_HOSTBACKDROPBRUSH,
+		DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+		DWMWA_WINDOW_CORNER_PREFERENCE = 33,
+		DWMWA_BORDER_COLOR,
+		DWMWA_CAPTION_COLOR,
+		DWMWA_TEXT_COLOR,
+		DWMWA_VISIBLE_FRAME_BORDER_THICKNESS,
+		DWMWA_SYSTEMBACKDROP_TYPE,
+		DWMWA_LAST
+	}
 }

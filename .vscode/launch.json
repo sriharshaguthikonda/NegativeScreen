@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug NegativeScreen",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/NegativeScreen/bin/Debug/net6.0-windows/NegativeScreen.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/NegativeScreen",
+            "stopAtEntry": false,
+            "console": "externalTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "logging": {
+                "moduleLoad": false
+            },
+            "justMyCode": false,
+            "requireExactSource": false,
+            "enableStepFiltering": false
+        }
+    ]
+}

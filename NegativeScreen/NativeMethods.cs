@@ -1,4 +1,4 @@
-﻿//Copyright 2011-2012 Melvyn Laily
+//Copyright 2011-2012 Melvyn Laily
 //http://arcanesanctum.net
 
 //This file is part of NegativeScreen.
@@ -27,7 +27,7 @@ namespace NegativeScreen
 	/// <summary>
 	/// based on http://delphi32.blogspot.com/2010/09/windows-magnification-api-net.html
 	/// </summary>
-	internal static class NativeMethods
+	public static class NativeMethods  // Changed from internal to public
 	{
 
 		#region "User32.dll"
@@ -57,6 +57,9 @@ namespace NegativeScreen
 		[DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, int flags);
+
+		[DllImport("user32.dll", SetLastError = false)]
+		public static extern IntPtr GetDesktopWindow();
 
 		/// <summary>
 		/// Sets a new extended window style.
@@ -200,6 +203,49 @@ namespace NegativeScreen
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool SetMagnificationDesktopColorEffect(ref ColorEffect pEffect);
 
+		/// <summary>
+		/// Retrieves a handle to the foreground window (the window with which the user is currently working).
+		/// </summary>
+		/// <returns>Handle to the foreground window.</returns>
+		[DllImport("user32.dll")]
+		public static extern IntPtr GetForegroundWindow();
+
+		/// <summary>
+		/// Determines whether the specified window handle identifies an existing window.
+		/// </summary>
+		/// <param name="hWnd">Handle to the window.</param>
+		/// <returns>True if the window handle identifies an existing window; otherwise, false.</returns>
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool IsWindow(IntPtr hWnd);
+
+		/// <summary>
+		/// Retrieves the dimensions of the bounding rectangle of the specified window.
+		/// </summary>
+		/// <param name="hWnd">Handle to the window.</param>
+		/// <param name="lpRect">Pointer to a RECT structure that receives the window's coordinates.</param>
+		/// <returns>True if the function succeeds; otherwise, false.</returns>
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+		/// <summary>
+		/// Finds a window by class name and window name
+		/// </summary>
+		/// <param name="lpClassName">The class name</param>
+		/// <param name="lpWindowName">The window name</param>
+		/// <returns>Handle to the window if found, IntPtr.Zero otherwise</returns>
+		[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+		public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+		/// <summary>
+		/// Updates the client area of the specified window by sending a WM_PAINT message.
+		/// </summary>
+		/// <param name="hWnd">Handle to the window.</param>
+		/// <returns>True if the function succeeds; otherwise, false.</returns>
+		[DllImport("user32.dll")]
+		public static extern bool UpdateWindow(IntPtr hWnd);
+
 		#endregion
 
 		#region "Kernel32.dll"
@@ -263,13 +309,21 @@ namespace NegativeScreen
 		/// </summary>
 		public const string WC_MAGNIFIER = "Magnifier";
 
-		[DllImport("Magnification.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("magnification.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool MagInitialize();
 
-		[DllImport("Magnification.dll", CallingConvention = CallingConvention.StdCall)]
+		[DllImport("magnification.dll", SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool MagUninitialize();
+
+		[DllImport("magnification.dll", SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool MagSetFullscreenColorEffect(ref ColorEffect effect);
+
+		[DllImport("magnification.dll", SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool MagSetColorEffect(IntPtr hwnd, ref ColorEffect effect);
 
 		[DllImport("Magnification.dll", CallingConvention = CallingConvention.StdCall)]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -296,6 +350,32 @@ namespace NegativeScreen
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool MagGetColorEffect(IntPtr hwnd, ref ColorEffect pEffect);
 
+		[DllImport("Magnification.dll", CallingConvention = CallingConvention.StdCall)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool MagSetFullscreenColorEffect(ref ColorEffect pEffect);
+
+		[DllImport("Magnification.dll", CallingConvention = CallingConvention.StdCall)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool MagGetFullscreenColorEffect(out ColorEffect pEffect);
+
+		#endregion
+
+		#region "GDI Methods"
+
+		[DllImport("gdi32.dll")]
+		public static extern bool BitBlt(IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight,
+			IntPtr hdcSrc, int nXSrc, int nYSrc, uint dwRop);
+
+		[DllImport("user32.dll")]
+		public static extern IntPtr GetWindowDC(IntPtr hWnd);
+
+		[DllImport("user32.dll")]
+		public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+		public const uint SRCCOPY = 0x00CC0020;
+		public const uint NOTSRCCOPY = 0x00330008;
+		public const uint DSTINVERT = 0x00550009;
+
 		#endregion
 
 		#region "DWM API"
@@ -316,6 +396,16 @@ namespace NegativeScreen
 		[DllImport("dwmapi.dll", PreserveSig = false)]
 		public static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attr, ref DWMFLIP3DWINDOWPOLICY attrValue, int attrSize);
 
+		/// <summary>
+		/// Sets the value of a specified window attribute.
+		/// </summary>
+		/// <param name="hwnd">Handle to the window.</param>
+		/// <param name="dwAttribute">The attribute to set.</param>
+		/// <param name="pvAttribute">Pointer to the value of the attribute.</param>
+		/// <param name="cbAttribute">Size of the attribute value.</param>
+		/// <returns>Returns S_OK if successful; otherwise, an error code.</returns>
+		[DllImport("dwmapi.dll")]
+		public static extern int DwmSetWindowAttribute(IntPtr hwnd, DwmWindowAttribute dwAttribute, ref int pvAttribute, int cbAttribute);
 
 		[DllImport("dwmapi.dll", PreserveSig = false)]
 		public static extern bool DwmIsCompositionEnabled();
