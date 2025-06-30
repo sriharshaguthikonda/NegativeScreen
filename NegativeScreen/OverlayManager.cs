@@ -87,6 +87,7 @@ unsafe class OverlayManager : Form
         exitItem.Click += ExitApplication;
         contextMenu.Items.Add(exitItem);
 
+<<<<<<< HEAD
         // Ensure menu is assigned to notifyIcon
         this.notifyIcon.ContextMenuStrip = contextMenu;
         
@@ -94,6 +95,46 @@ unsafe class OverlayManager : Form
         this.notifyIcon.DoubleClick += (s, e) => ForceInvertCurrentWindow();
         
         Console.WriteLine("Tray icon and menu initialized");
+=======
+		private NotifyIcon notifyIcon;
+		private ContextMenuStrip contextMenu;
+
+		public OverlayManager()
+		{
+			contextMenu = new System.Windows.Forms.ContextMenuStrip();
+			foreach (var item in Screen.AllScreens)
+			{
+				contextMenu.Items.Add(new ToolStripMenuItem(item.DeviceName, null, (s, e) =>
+				{
+					Initialization();
+				}) { CheckOnClick = true, Checked = true });
+			}
+			notifyIcon = new NotifyIcon();
+			notifyIcon.ContextMenuStrip = contextMenu;
+			notifyIcon.Icon = new Icon(this.Icon, 32, 32);
+			notifyIcon.Visible = true;
+
+			if (!NativeMethods.RegisterHotKey(this.Handle, HALT_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.H))
+			{
+				throw new Exception("RegisterHotKey(win+alt+H)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+			}
+			if (!NativeMethods.RegisterHotKey(this.Handle, TOGGLE_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.N))
+			{
+				throw new Exception("RegisterHotKey(win+alt+N)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+			}
+			if (!NativeMethods.RegisterHotKey(this.Handle, RESET_TIMER_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.Multiply))
+			{
+				throw new Exception("RegisterHotKey(win+alt+Multiply)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+			}
+			if (!NativeMethods.RegisterHotKey(this.Handle, INCREASE_TIMER_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.Add))
+			{
+				throw new Exception("RegisterHotKey(win+alt+Add)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+			}
+			if (!NativeMethods.RegisterHotKey(this.Handle, DECREASE_TIMER_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.Subtract))
+			{
+				throw new Exception("RegisterHotKey(win+alt+Substract)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+			}
+>>>>>>> custom_multi_monitor_support
 
         // Register hotkeys
         if (!NativeMethods.RegisterHotKey(this.Handle, HALT_HOTKEY_ID, 
@@ -131,6 +172,7 @@ unsafe class OverlayManager : Form
         catch (Exception) { }
     }
 
+<<<<<<< HEAD
     protected override void WndProc(ref Message m)
     {
         switch (m.Msg)
@@ -148,6 +190,27 @@ unsafe class OverlayManager : Form
                         break;
                 }
                 break;
+=======
+		private void Initialization()
+		{
+			foreach (var item in overlays)
+			{
+				item.Dispose();
+			}
+			overlays = new List<NegativeOverlay>();
+			foreach (var item in Screen.AllScreens)
+			{
+				foreach (ToolStripMenuItem menuItem in this.contextMenu.Items)
+				{
+					if (menuItem.Text == item.DeviceName && menuItem.Checked)
+					{
+						overlays.Add(new NegativeOverlay(item));
+					}
+				}
+			}
+			RefreshLoop(overlays);
+		}
+>>>>>>> custom_multi_monitor_support
 
             // Add foreground window change detection
             case (int)WindowMessage.WM_ACTIVATEAPP:
@@ -232,6 +295,7 @@ unsafe class OverlayManager : Form
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
+<<<<<<< HEAD
         Console.WriteLine("Testing color effect matrix...");
         
         try
@@ -243,6 +307,89 @@ unsafe class OverlayManager : Form
                 int error = Marshal.GetLastWin32Error();
                 throw new Win32Exception(error, $"Full screen color effect test failed. Error code: {error}");
             }
+=======
+		protected override void WndProc(ref Message m)
+		{
+			// Listen for operating system messages.
+			switch (m.Msg)
+			{
+				case (int)WindowMessage.WM_DWMCOMPOSITIONCHANGED:
+					//aero has been enabled/disabled. It causes the magnified control to stop working
+					if (Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor == 0)
+					{
+						//running Vista.
+						//The creation of the magnification Window on this OS seems to change desktop composition,
+						//leading to infinite loop
+					}
+					else
+					{
+						Initialization();
+					}
+					break;
+				case (int)WindowMessage.WM_HOTKEY:
+					switch ((int)m.WParam)
+					{
+						case HALT_HOTKEY_ID:
+							//otherwise, if paused, the application never stops
+							mainLoopPaused = false;
+							notifyIcon.Dispose();
+							this.Dispose();
+							Application.Exit();
+							break;
+						case TOGGLE_HOTKEY_ID:
+							this.mainLoopPaused = !mainLoopPaused;
+							break;
+						case RESET_TIMER_HOTKEY_ID:
+							this.refreshInterval = DEFAULT_SLEEP_TIME;
+							break;
+						case INCREASE_TIMER_HOTKEY_ID:
+							this.refreshInterval += DEFAULT_INCREASE_STEP;
+							break;
+						case DECREASE_TIMER_HOTKEY_ID:
+							this.refreshInterval -= DEFAULT_INCREASE_STEP;
+							if (this.refreshInterval < 0)
+							{
+								this.refreshInterval = 0;
+							}
+							break;
+						case MODE1_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.Negative);
+							break;
+						case MODE2_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.NegativeHueShift180);
+							break;
+						case MODE3_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.NegativeHueShift180Variation1);
+							break;
+						case MODE4_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.NegativeHueShift180Variation2);
+							break;
+						case MODE5_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.NegativeHueShift180Variation3);
+							break;
+						case MODE6_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.NegativeHueShift180Variation4);
+							break;
+						case MODE7_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.NegativeSepia);
+							break;
+						case MODE8_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.NegativeGrayScale);
+							break;
+						case MODE9_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.NegativeRed);
+							break;
+						case MODE10_HOTKEY_ID:
+							BuiltinMatrices.ChangeColorEffect(overlays, BuiltinMatrices.Red);
+							break;
+						default:
+							break;
+					}
+					break;
+			}
+			base.WndProc(ref m);
+		}
+>>>>>>> custom_multi_monitor_support
 
             // Immediately reset to normal - don't wait
             effect = new ColorEffect(BuiltinMatrices.Identity);
