@@ -18,8 +18,8 @@ jobs:
       - name: Update Chocolatey
         run: choco upgrade chocolatey
 
-      - name: Install .NET Framework 4.5
-        run: choco install netfx-4.5 --no-progress --yes
+      - name: Install .NET Framework 4.5.2
+        run: choco install netfx-4.5.2 --no-progress --yes
 
       - name: Build x86 Release
         run: msbuild NegativeScreen.sln /p:Configuration=Release /p:Platform=x86
