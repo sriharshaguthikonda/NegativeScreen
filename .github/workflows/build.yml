@@ -21,8 +21,5 @@ jobs:
       - name: Install .NET Framework 4.5.2
         run: choco install dotnet4.5.2 --yes
 
-      - name: Build x86 Release
-        run: msbuild NegativeScreen.sln /p:Configuration=Release /p:Platform=x86
-
       - name: Build x64 Release
         run: msbuild NegativeScreen.sln /p:Configuration=Release /p:Platform=x64
