@@ -12,14 +12,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
 
-      - name: Update Chocolatey
-        run: choco upgrade chocolatey
+      - name: Restore
+        run: dotnet restore NegativeScreen/NegativeScreen.csproj
 
-      - name: Install .NET Framework 4.5
-        run: choco install dotnet4.5 --yes
+      - name: Build x86 Release
+        run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x86
+
 
       - name: Build x64 Release
-        run: msbuild NegativeScreen.sln /p:Configuration=Release /p:Platform=x64
+        run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x64
