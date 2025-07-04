@@ -23,5 +23,6 @@ jobs:
       - name: Build x86 Release
         run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x86
 
+
       - name: Build x64 Release
         run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x64
