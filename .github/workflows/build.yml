@@ -20,9 +20,14 @@ jobs:
       - name: Restore
         run: dotnet restore NegativeScreen/NegativeScreen.csproj
 
-      - name: Build x86 Release
-        run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x86
-
 
       - name: Build x64 Release
         run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x64
+
+
+
+      - name: Upload x64 EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: NegativeScreen-x64
+          path: NegativeScreen/bin/x64/Release/net9.0-windows/NegativeScreen.exe
