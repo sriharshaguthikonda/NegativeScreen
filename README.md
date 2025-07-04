@@ -52,7 +52,7 @@ Both run on Windows 8 or superior.
 
 Graphic acceleration (Aero) must be enabled.
 
-.NET 4.5 is required. (Should be available out of the box on up-to-date Windows installations)
+.NET 9 is required. Install the latest .NET Desktop Runtime 9.0 on your system.
 
 
 ## Default controls
