@@ -15,8 +15,11 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v1
 
-      - name: Install .NET Framework 4.5 Developer Pack
-        run: choco install netfx-4.5-devpack --no-progress --yes
+      - name: Update Chocolatey
+        run: choco upgrade chocolatey
+
+      - name: Install .NET Framework 4.5
+        run: choco install netfx-4.5 --no-progress --yes
 
       - name: Build x86 Release
         run: msbuild NegativeScreen.sln /p:Configuration=Release /p:Platform=x86
