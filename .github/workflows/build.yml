@@ -18,8 +18,8 @@ jobs:
       - name: Update Chocolatey
         run: choco upgrade chocolatey
 
-      - name: Install .NET Framework 4.5.2
-        run: choco install dotnet4.5.2 --yes
+      - name: Install .NET Framework 4.5
+        run: choco install dotnet4.5 --yes
 
       - name: Build x64 Release
         run: msbuild NegativeScreen.sln /p:Configuration=Release /p:Platform=x64
