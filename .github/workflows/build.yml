@@ -1,0 +1,22 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: microsoft/setup-msbuild@v1.1
+      - name: Build solution
+        run: msbuild NegativeScreen.sln /p:Configuration=Release
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: NegativeScreen-build
+          path: |
+            **/bin/Release/**/*
+
