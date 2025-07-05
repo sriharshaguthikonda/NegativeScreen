@@ -26,8 +26,19 @@ jobs:
 
 
 
+      - name: Build x86 Release
+        run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x86
+
+
+
       - name: Upload x64 EXE
         uses: actions/upload-artifact@v4
         with:
           name: NegativeScreen-x64
           path: NegativeScreen/bin/x64/Release/net9.0-windows/NegativeScreen.exe
+
+      - name: Upload x86 EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: NegativeScreen-x86
+          path: NegativeScreen/bin/x86Release/net9.0-windows/NegativeScreen.exe
