@@ -23,6 +23,9 @@ allowing blacks and whites inversion, while keeping colors (about) the sames.
 
 Windows Aero must be enabled, or the program won't start.
 This prevent some undesirable behaviours (black screens, 100% CPU usage...)
+- Tray icon with display names and an Exit button.
+- Simple GUI to configure refresh interval.
+- Configuration is saved between sessions.
 - Continuous integration with GitHub Actions builds the solution automatically on Windows.
 
 

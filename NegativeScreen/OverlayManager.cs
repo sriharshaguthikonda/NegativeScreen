@@ -57,7 +57,8 @@ namespace NegativeScreen
 		/// </summary>
 		private bool mainLoopPaused = false;
 
-		private int refreshInterval = DEFAULT_SLEEP_TIME;
+                private int refreshInterval = DEFAULT_SLEEP_TIME;
+                private Config config;
 
 		private List<NegativeOverlay> overlays = new List<NegativeOverlay>();
 
@@ -66,20 +67,44 @@ namespace NegativeScreen
 		private NotifyIcon notifyIcon;
 		private ContextMenuStrip contextMenu;
 
-		public OverlayManager()
-		{
-			contextMenu = new System.Windows.Forms.ContextMenuStrip();
-			foreach (var item in Screen.AllScreens)
-			{
-				contextMenu.Items.Add(new ToolStripMenuItem(item.DeviceName, null, (s, e) =>
-				{
-					Initialization();
-				}) { CheckOnClick = true, Checked = true });
-			}
-			notifyIcon = new NotifyIcon();
-			notifyIcon.ContextMenuStrip = contextMenu;
-			notifyIcon.Icon = new Icon(this.Icon, 32, 32);
-			notifyIcon.Visible = true;
+                public OverlayManager()
+                {
+                        config = Config.Load();
+                        this.refreshInterval = config.RefreshInterval;
+                        contextMenu = new System.Windows.Forms.ContextMenuStrip();
+                        foreach (var item in Screen.AllScreens)
+                        {
+                                contextMenu.Items.Add(new ToolStripMenuItem(item.DeviceName, null, (s, e) =>
+                                {
+                                        Initialization();
+                                }) { CheckOnClick = true, Checked = true });
+                        }
+                        contextMenu.Items.Add(new ToolStripSeparator());
+                        contextMenu.Items.Add(new ToolStripMenuItem("Settings...", null, (s, e) =>
+                        {
+                                using (ConfigForm form = new ConfigForm(config))
+                                {
+                                        form.ShowDialog();
+                                        this.refreshInterval = config.RefreshInterval;
+                                }
+                        }));
+                        contextMenu.Items.Add(new ToolStripMenuItem("Exit", null, (s, e) =>
+                        {
+                                Application.Exit();
+                        }));
+                        notifyIcon = new NotifyIcon();
+                        notifyIcon.ContextMenuStrip = contextMenu;
+                        notifyIcon.Icon = new Icon(this.Icon, 32, 32);
+                        string names = "";
+                        foreach (Screen s in Screen.AllScreens)
+                        {
+                                if (names.Length > 0) names += ", ";
+                                names += s.DeviceName;
+                        }
+                        notifyIcon.Text = "NegativeScreen - " + names;
+                        if (notifyIcon.Text.Length > 63)
+                                notifyIcon.Text = notifyIcon.Text.Substring(0, 63);
+                        notifyIcon.Visible = true;
 
 			if (!NativeMethods.RegisterHotKey(this.Handle, HALT_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.H))
 			{
