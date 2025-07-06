@@ -63,23 +63,78 @@ namespace NegativeScreen
 
 		private bool resolutionHasChanged = false;
 
-		private NotifyIcon notifyIcon;
-		private ContextMenuStrip contextMenu;
+                private NotifyIcon notifyIcon;
+        private ContextMenuStrip contextMenu;
+        private string[] selectedDisplays;
 
-		public OverlayManager()
-		{
-			contextMenu = new System.Windows.Forms.ContextMenuStrip();
-			foreach (var item in Screen.AllScreens)
-			{
-				contextMenu.Items.Add(new ToolStripMenuItem(item.DeviceName, null, (s, e) =>
-				{
-					Initialization();
-				}) { CheckOnClick = true, Checked = true });
-			}
-			notifyIcon = new NotifyIcon();
-			notifyIcon.ContextMenuStrip = contextMenu;
-			notifyIcon.Icon = new Icon(this.Icon, 32, 32);
-			notifyIcon.Visible = true;
+        private void CreateContextMenu()
+        {
+            contextMenu = new ContextMenuStrip();
+            foreach (var screen in Screen.AllScreens)
+            {
+                var item = new ToolStripMenuItem(screen.DeviceName)
+                {
+                    CheckOnClick = true,
+                    Checked = selectedDisplays != null && Array.IndexOf(selectedDisplays, screen.DeviceName) >= 0
+                };
+                item.Tag = screen.DeviceName;
+                item.Click += (s, e) =>
+                {
+                    SaveConfigFromMenu();
+                    Initialization();
+                };
+                contextMenu.Items.Add(item);
+            }
+            contextMenu.Items.Add(new ToolStripSeparator());
+            var settingsItem = new ToolStripMenuItem("Settings", null, (s, e) => ShowSettings());
+            contextMenu.Items.Add(settingsItem);
+            var exitItem = new ToolStripMenuItem("Exit", null, (s, e) => ExitApplication());
+            contextMenu.Items.Add(exitItem);
+        }
+
+        private void SaveConfigFromMenu()
+        {
+            var displays = new System.Collections.Generic.List<string>();
+            foreach (ToolStripMenuItem mi in contextMenu.Items)
+            {
+                if (mi.Tag is string device && mi.Checked)
+                    displays.Add(device);
+            }
+            selectedDisplays = displays.ToArray();
+            Config.SaveSelectedDisplays(selectedDisplays);
+        }
+
+        private void ShowSettings()
+        {
+            using (var form = new SettingsForm(selectedDisplays))
+            {
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    selectedDisplays = form.SelectedDisplays;
+                    Config.SaveSelectedDisplays(selectedDisplays);
+                    CreateContextMenu();
+                    notifyIcon.ContextMenuStrip = contextMenu;
+                    Initialization();
+                }
+            }
+        }
+
+        private void ExitApplication()
+        {
+            mainLoopPaused = false;
+            notifyIcon.Dispose();
+            this.Dispose();
+            Application.Exit();
+        }
+
+                public OverlayManager()
+                {
+                        selectedDisplays = Config.LoadSelectedDisplays();
+                        CreateContextMenu();
+                        notifyIcon = new NotifyIcon();
+                        notifyIcon.ContextMenuStrip = contextMenu;
+                        notifyIcon.Icon = new Icon(this.Icon, 32, 32);
+                        notifyIcon.Visible = true;
 
 			if (!NativeMethods.RegisterHotKey(this.Handle, HALT_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.H))
 			{
@@ -167,16 +222,16 @@ namespace NegativeScreen
 				item.Dispose();
 			}
 			overlays = new List<NegativeOverlay>();
-			foreach (var item in Screen.AllScreens)
-			{
-				foreach (ToolStripMenuItem menuItem in this.contextMenu.Items)
-				{
-					if (menuItem.Text == item.DeviceName && menuItem.Checked)
-					{
-						overlays.Add(new NegativeOverlay(item));
-					}
-				}
-			}
+                        foreach (var item in Screen.AllScreens)
+                        {
+                                foreach (ToolStripMenuItem menuItem in this.contextMenu.Items)
+                                {
+                                        if (menuItem.Tag is string device && device == item.DeviceName && menuItem.Checked)
+                                        {
+                                                overlays.Add(new NegativeOverlay(item));
+                                        }
+                                }
+                        }
 			RefreshLoop(overlays);
 		}
 
@@ -310,13 +365,10 @@ namespace NegativeScreen
 				case (int)WindowMessage.WM_HOTKEY:
 					switch ((int)m.WParam)
 					{
-						case HALT_HOTKEY_ID:
-							//otherwise, if paused, the application never stops
-							mainLoopPaused = false;
-							notifyIcon.Dispose();
-							this.Dispose();
-							Application.Exit();
-							break;
+                                                case HALT_HOTKEY_ID:
+                                                        //otherwise, if paused, the application never stops
+                                                        ExitApplication();
+                                                        break;
 						case TOGGLE_HOTKEY_ID:
 							this.mainLoopPaused = !mainLoopPaused;
 							break;
