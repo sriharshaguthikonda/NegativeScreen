@@ -24,6 +24,10 @@ allowing blacks and whites inversion, while keeping colors (about) the sames.
 Windows Aero must be enabled, or the program won't start.
 This prevent some undesirable behaviours (black screens, 100% CPU usage...)
 - Continuous integration with GitHub Actions builds the solution automatically on Windows.
+- Tray icon displays each screen name and includes an Exit option.
+- A simple Settings window lets you choose screens to invert and saves your choices.
+- Configuration is persisted in a local config file.
+- Builds target 64-bit only.
 
 
 Useful controls:
