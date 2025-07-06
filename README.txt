@@ -11,7 +11,7 @@ This task is joyfully achieved by inverting the colors of your screen.
 Unlike the Windows Magnifier, which is also capable of such color inversion,
 NegativeScreen was specifically designed to be easy and convenient to use.
 
-It comes without any graphic interface, but dont worry, this only makes it easier to use!
+It comes with a minimal graphic interface in the form of a system tray icon with a context menu, but don't worry, this only makes it easier to use!
 
 
 Features:
@@ -20,6 +20,8 @@ Invert screen's colors :)
 
 Different inversion modes, including "smart" modes,
 allowing blacks and whites inversion, while keeping colors (about) the sames.
+You can customize color effects and hot keys using a configuration file.
+A basic web API can also control the program when enabled.
 
 Windows Aero must be enabled, or the program won't start.
 This prevent some undesirable behaviours (black screens, 100% CPU usage...)
@@ -56,3 +58,4 @@ Many thanks to Tom MacLeod who gave me the idea for the "smart" inversion mode :
 
 
 Enjoy!
+Continuous integration builds are available on GitHub. The workflow uses a v4 Windows runner and uploads the release executables as artifacts.
