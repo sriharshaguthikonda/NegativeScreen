@@ -48,8 +48,8 @@ namespace NegativeScreen
 		public const int MODE9_HOTKEY_ID = 59;
 		public const int MODE10_HOTKEY_ID = 60;
 
-		private const int DEFAULT_INCREASE_STEP = 10;
-		private const int DEFAULT_SLEEP_TIME = DEFAULT_INCREASE_STEP;
+                private const int DEFAULT_INCREASE_STEP = 10;
+                private const int DEFAULT_SLEEP_TIME = DEFAULT_INCREASE_STEP;
 		private const int PAUSE_SLEEP_TIME = 100;
 
 		/// <summary>
@@ -63,23 +63,45 @@ namespace NegativeScreen
 
 		private bool resolutionHasChanged = false;
 
-		private NotifyIcon notifyIcon;
-		private ContextMenuStrip contextMenu;
+                private NotifyIcon notifyIcon;
+                private ContextMenuStrip contextMenu;
+                private Config config;
 
-		public OverlayManager()
-		{
-			contextMenu = new System.Windows.Forms.ContextMenuStrip();
-			foreach (var item in Screen.AllScreens)
-			{
-				contextMenu.Items.Add(new ToolStripMenuItem(item.DeviceName, null, (s, e) =>
-				{
-					Initialization();
-				}) { CheckOnClick = true, Checked = true });
-			}
-			notifyIcon = new NotifyIcon();
-			notifyIcon.ContextMenuStrip = contextMenu;
-			notifyIcon.Icon = new Icon(this.Icon, 32, 32);
-			notifyIcon.Visible = true;
+                public OverlayManager()
+                {
+                        config = Config.Load() ?? Config.CreateDefault();
+                        this.refreshInterval = config.RefreshInterval;
+
+                        contextMenu = new System.Windows.Forms.ContextMenuStrip();
+                        int index = 1;
+                        foreach (var screen in Screen.AllScreens)
+                        {
+                                bool enabled = config.EnabledDisplays.Contains(screen.DeviceName);
+                                ToolStripMenuItem mi = new ToolStripMenuItem("Display " + index + " - " + screen.DeviceName, null,
+                                        (s, e) => { SaveScreenConfiguration(); Initialization(); })
+                                { CheckOnClick = true, Checked = enabled, Tag = screen.DeviceName };
+                                contextMenu.Items.Add(mi);
+                                index++;
+                        }
+                        contextMenu.Items.Add(new ToolStripSeparator());
+                        contextMenu.Items.Add(new ToolStripMenuItem("Settings", null, (s, e) =>
+                        {
+                                using (ConfigForm f = new ConfigForm(config))
+                                {
+                                        if (f.ShowDialog() == DialogResult.OK)
+                                        {
+                                                this.refreshInterval = config.RefreshInterval;
+                                                UpdateMenuChecks();
+                                                Initialization();
+                                        }
+                                }
+                        }));
+                        contextMenu.Items.Add(new ToolStripMenuItem("Exit", null, (s, e) => { Application.Exit(); }));
+
+                        notifyIcon = new NotifyIcon();
+                        notifyIcon.ContextMenuStrip = contextMenu;
+                        notifyIcon.Icon = new Icon(this.Icon, 32, 32);
+                        notifyIcon.Visible = true;
 
 			if (!NativeMethods.RegisterHotKey(this.Handle, HALT_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.H))
 			{
@@ -162,22 +184,19 @@ namespace NegativeScreen
 
 		private void Initialization()
 		{
-			foreach (var item in overlays)
-			{
-				item.Dispose();
-			}
-			overlays = new List<NegativeOverlay>();
-			foreach (var item in Screen.AllScreens)
-			{
-				foreach (ToolStripMenuItem menuItem in this.contextMenu.Items)
-				{
-					if (menuItem.Text == item.DeviceName && menuItem.Checked)
-					{
-						overlays.Add(new NegativeOverlay(item));
-					}
-				}
-			}
-			RefreshLoop(overlays);
+                        foreach (var item in overlays)
+                        {
+                                item.Dispose();
+                        }
+                        overlays = new List<NegativeOverlay>();
+                        foreach (var screen in Screen.AllScreens)
+                        {
+                                if (config.EnabledDisplays.Contains(screen.DeviceName))
+                                {
+                                        overlays.Add(new NegativeOverlay(screen));
+                                }
+                        }
+                        RefreshLoop(overlays);
 		}
 
 		private void RefreshLoop(List<NegativeOverlay> overlays)
@@ -269,8 +288,8 @@ namespace NegativeScreen
 			}
 		}
 
-		private void UnregisterHotKeys()
-		{
+                private void UnregisterHotKeys()
+                {
 			NativeMethods.UnregisterHotKey(this.Handle, HALT_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, TOGGLE_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, RESET_TIMER_HOTKEY_ID);
@@ -286,8 +305,34 @@ namespace NegativeScreen
 			NativeMethods.UnregisterHotKey(this.Handle, MODE7_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, MODE8_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, MODE9_HOTKEY_ID);
-			NativeMethods.UnregisterHotKey(this.Handle, MODE10_HOTKEY_ID);
-		}
+                        NativeMethods.UnregisterHotKey(this.Handle, MODE10_HOTKEY_ID);
+                }
+
+                private void SaveScreenConfiguration()
+                {
+                        config.EnabledDisplays = new List<string>();
+                        foreach (ToolStripItem item in contextMenu.Items)
+                        {
+                                ToolStripMenuItem mi = item as ToolStripMenuItem;
+                                if (mi != null && mi.Tag is string && mi.Checked)
+                                {
+                                        config.EnabledDisplays.Add(mi.Tag.ToString());
+                                }
+                        }
+                        config.Save();
+                }
+
+                private void UpdateMenuChecks()
+                {
+                        foreach (ToolStripItem item in contextMenu.Items)
+                        {
+                                ToolStripMenuItem mi = item as ToolStripMenuItem;
+                                if (mi != null && mi.Tag is string)
+                                {
+                                        mi.Checked = config.EnabledDisplays.Contains(mi.Tag.ToString());
+                                }
+                        }
+                }
 
 		protected override void WndProc(ref Message m)
 		{
@@ -371,12 +416,13 @@ namespace NegativeScreen
 			base.WndProc(ref m);
 		}
 
-		protected override void Dispose(bool disposing)
-		{
-			UnregisterHotKeys();
-			NativeMethods.MagUninitialize();
-			base.Dispose(disposing);
-		}
+                protected override void Dispose(bool disposing)
+                {
+                        SaveScreenConfiguration();
+                        UnregisterHotKeys();
+                        NativeMethods.MagUninitialize();
+                        base.Dispose(disposing);
+                }
 
 	}
 }
