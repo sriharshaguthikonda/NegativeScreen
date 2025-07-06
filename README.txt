@@ -57,3 +57,9 @@ Many thanks to Tom MacLeod who gave me the idea for the "smart" inversion mode :
 
 
 Enjoy!
+
+
+
+
+
+lets see if this build works!
