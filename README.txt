@@ -23,6 +23,7 @@ allowing blacks and whites inversion, while keeping colors (about) the sames.
 
 Windows Aero must be enabled, or the program won't start.
 This prevent some undesirable behaviours (black screens, 100% CPU usage...)
+- Continuous integration with GitHub Actions builds the solution automatically on Windows.
 
 
 Useful controls:
