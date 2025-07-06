@@ -16,10 +16,11 @@ It comes without any graphic interface, but dont worry, this only makes it easie
 
 Features:
 
-Invert screen's colors :)
-
-Different inversion modes, including "smart" modes,
-allowing blacks and whites inversion, while keeping colors (about) the sames.
+- Invert screen's colors :)
+- Different inversion modes, including "smart" modes,
+  allowing blacks and whites inversion, while keeping colors (about) the sames.
+- Toggle inversion for each monitor individually when using several displays.
+- Built automatically on GitHub Actions using the v4 runner.
 
 Windows Aero must be enabled, or the program won't start.
 This prevent some undesirable behaviours (black screens, 100% CPU usage...)
@@ -56,3 +57,4 @@ Many thanks to Tom MacLeod who gave me the idea for the "smart" inversion mode :
 
 
 Enjoy!
+This project is built automatically with GitHub Actions. See .github/workflows/build.yml for details.
