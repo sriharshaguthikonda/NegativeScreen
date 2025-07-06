@@ -21,9 +21,13 @@ Invert screen's colors :)
 Different inversion modes, including "smart" modes,
 allowing blacks and whites inversion, while keeping colors (about) the sames.
 
+Tray icon shows display names with an Exit option.
+Settings window to configure refresh interval and active displays.
+Configuration saved to `config.xml` and loaded on startup.
+
 Windows Aero must be enabled, or the program won't start.
 This prevent some undesirable behaviours (black screens, 100% CPU usage...)
-- Continuous integration with GitHub Actions builds the solution automatically on Windows.
+- Continuous integration with GitHub Actions builds the solution automatically on Windows using the v4 runner.
 
 
 Useful controls:

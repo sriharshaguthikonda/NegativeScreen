@@ -22,6 +22,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Drawing;
+using System.Linq;
 
 namespace NegativeScreen
 {
@@ -55,31 +56,76 @@ namespace NegativeScreen
 		/// <summary>
 		/// control whether the main loop is paused or not.
 		/// </summary>
-		private bool mainLoopPaused = false;
+                private bool mainLoopPaused = false;
 
-		private int refreshInterval = DEFAULT_SLEEP_TIME;
+                private int refreshInterval = DEFAULT_SLEEP_TIME;
 
-		private List<NegativeOverlay> overlays = new List<NegativeOverlay>();
+                private List<NegativeOverlay> overlays = new List<NegativeOverlay>();
 
-		private bool resolutionHasChanged = false;
+                private bool resolutionHasChanged = false;
 
-		private NotifyIcon notifyIcon;
-		private ContextMenuStrip contextMenu;
+                private NotifyIcon notifyIcon;
+                private ContextMenuStrip contextMenu;
+                private List<ToolStripMenuItem> displayMenuItems = new List<ToolStripMenuItem>();
+                private AppConfig config;
 
-		public OverlayManager()
-		{
-			contextMenu = new System.Windows.Forms.ContextMenuStrip();
-			foreach (var item in Screen.AllScreens)
-			{
-				contextMenu.Items.Add(new ToolStripMenuItem(item.DeviceName, null, (s, e) =>
-				{
-					Initialization();
-				}) { CheckOnClick = true, Checked = true });
-			}
-			notifyIcon = new NotifyIcon();
-			notifyIcon.ContextMenuStrip = contextMenu;
-			notifyIcon.Icon = new Icon(this.Icon, 32, 32);
-			notifyIcon.Visible = true;
+                public OverlayManager()
+                {
+                        config = AppConfig.Load();
+                        contextMenu = new System.Windows.Forms.ContextMenuStrip();
+                        int index = 1;
+                        foreach (var item in Screen.AllScreens)
+                        {
+                                string label = "Display " + index + ": " + item.DeviceName;
+                                var menu = new ToolStripMenuItem(label, null, (s, e) =>
+                                {
+                                        var mi = (ToolStripMenuItem)s;
+                                        if (mi.Checked)
+                                        {
+                                                if (!config.EnabledDisplays.Contains((string)mi.Tag))
+                                                {
+                                                        config.EnabledDisplays.Add((string)mi.Tag);
+                                                }
+                                        }
+                                        else
+                                        {
+                                                config.EnabledDisplays.Remove((string)mi.Tag);
+                                        }
+                                        config.Save();
+                                        Initialization();
+                                }) { CheckOnClick = true, Checked = config.EnabledDisplays.Contains(item.DeviceName), Tag = item.DeviceName };
+                                contextMenu.Items.Add(menu);
+                                displayMenuItems.Add(menu);
+                                index++;
+                        }
+                        contextMenu.Items.Add(new ToolStripSeparator());
+                        contextMenu.Items.Add("Settings", null, (s, e) =>
+                        {
+                                using (var form = new SettingsForm(config))
+                                {
+                                        if (form.ShowDialog() == DialogResult.OK)
+                                        {
+                                                foreach (var mi in displayMenuItems)
+                                                {
+                                                        mi.Checked = config.EnabledDisplays.Contains((string)mi.Tag);
+                                                }
+                                                this.refreshInterval = config.RefreshInterval;
+                                                Initialization();
+                                        }
+                                }
+                        });
+                        contextMenu.Items.Add("Exit", null, (s, e) =>
+                        {
+                                mainLoopPaused = false;
+                                notifyIcon.Dispose();
+                                this.Dispose();
+                                Application.Exit();
+                        });
+
+                        notifyIcon = new NotifyIcon();
+                        notifyIcon.ContextMenuStrip = contextMenu;
+                        notifyIcon.Icon = new Icon(this.Icon, 32, 32);
+                        notifyIcon.Visible = true;
 
 			if (!NativeMethods.RegisterHotKey(this.Handle, HALT_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.H))
 			{
@@ -160,25 +206,31 @@ namespace NegativeScreen
 			resolutionHasChanged = true;
 		}
 
-		private void Initialization()
-		{
-			foreach (var item in overlays)
-			{
-				item.Dispose();
-			}
-			overlays = new List<NegativeOverlay>();
-			foreach (var item in Screen.AllScreens)
-			{
-				foreach (ToolStripMenuItem menuItem in this.contextMenu.Items)
-				{
-					if (menuItem.Text == item.DeviceName && menuItem.Checked)
-					{
-						overlays.Add(new NegativeOverlay(item));
-					}
-				}
-			}
-			RefreshLoop(overlays);
-		}
+                private void Initialization()
+                {
+                        foreach (var item in overlays)
+                        {
+                                item.Dispose();
+                        }
+                        overlays = new List<NegativeOverlay>();
+
+                        foreach (var screen in Screen.AllScreens)
+                        {
+                                if (config.EnabledDisplays.Contains(screen.DeviceName))
+                                {
+                                        overlays.Add(new NegativeOverlay(screen));
+                                }
+                        }
+
+                        foreach (var mi in displayMenuItems)
+                        {
+                                mi.Checked = config.EnabledDisplays.Contains((string)mi.Tag);
+                        }
+
+                        this.refreshInterval = config.RefreshInterval;
+
+                        RefreshLoop(overlays);
+                }
 
 		private void RefreshLoop(List<NegativeOverlay> overlays)
 		{
