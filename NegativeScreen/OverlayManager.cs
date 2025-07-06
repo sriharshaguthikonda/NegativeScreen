@@ -63,23 +63,31 @@ namespace NegativeScreen
 
 		private bool resolutionHasChanged = false;
 
-		private NotifyIcon notifyIcon;
-		private ContextMenuStrip contextMenu;
+                private NotifyIcon notifyIcon;
+                private ContextMenuStrip contextMenu;
+                private List<ToolStripMenuItem> displayMenuItems = new List<ToolStripMenuItem>();
 
-		public OverlayManager()
-		{
-			contextMenu = new System.Windows.Forms.ContextMenuStrip();
-			foreach (var item in Screen.AllScreens)
-			{
-				contextMenu.Items.Add(new ToolStripMenuItem(item.DeviceName, null, (s, e) =>
-				{
-					Initialization();
-				}) { CheckOnClick = true, Checked = true });
-			}
-			notifyIcon = new NotifyIcon();
-			notifyIcon.ContextMenuStrip = contextMenu;
-			notifyIcon.Icon = new Icon(this.Icon, 32, 32);
-			notifyIcon.Visible = true;
+                public OverlayManager()
+                {
+                        contextMenu = new System.Windows.Forms.ContextMenuStrip();
+                        var enabled = ConfigManager.LoadEnabledDisplays();
+                        int i = 1;
+                        foreach (var item in Screen.AllScreens)
+                        {
+                                string text = $"Display {i++} {(item.Primary ? "(Primary)" : "")}: {item.DeviceName}";
+                                var menuItem = new ToolStripMenuItem(text) { CheckOnClick = true, Checked = enabled.Count == 0 || enabled.Contains(item.DeviceName) };
+                                menuItem.CheckedChanged += (s, e) => { ConfigManager.SaveEnabledDisplays(GetSelectedDisplays()); Initialization(); };
+                                contextMenu.Items.Add(menuItem);
+                                displayMenuItems.Add(menuItem);
+                        }
+                        contextMenu.Items.Add(new ToolStripSeparator());
+                        contextMenu.Items.Add(new ToolStripMenuItem("Settings", null, (s, e) => OpenSettings()));
+                        contextMenu.Items.Add(new ToolStripMenuItem("Exit", null, (s, e) => ExitApplication()));
+
+                        notifyIcon = new NotifyIcon();
+                        notifyIcon.ContextMenuStrip = contextMenu;
+                        notifyIcon.Icon = new Icon(this.Icon, 32, 32);
+                        notifyIcon.Visible = true;
 
 			if (!NativeMethods.RegisterHotKey(this.Handle, HALT_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.H))
 			{
@@ -160,25 +168,23 @@ namespace NegativeScreen
 			resolutionHasChanged = true;
 		}
 
-		private void Initialization()
-		{
-			foreach (var item in overlays)
-			{
-				item.Dispose();
-			}
-			overlays = new List<NegativeOverlay>();
-			foreach (var item in Screen.AllScreens)
-			{
-				foreach (ToolStripMenuItem menuItem in this.contextMenu.Items)
-				{
-					if (menuItem.Text == item.DeviceName && menuItem.Checked)
-					{
-						overlays.Add(new NegativeOverlay(item));
-					}
-				}
-			}
-			RefreshLoop(overlays);
-		}
+                private void Initialization()
+                {
+                        foreach (var item in overlays)
+                        {
+                                item.Dispose();
+                        }
+                        overlays = new List<NegativeOverlay>();
+                        var screens = Screen.AllScreens;
+                        for (int i = 0; i < screens.Length && i < displayMenuItems.Count; i++)
+                        {
+                                if (displayMenuItems[i].Checked)
+                                {
+                                        overlays.Add(new NegativeOverlay(screens[i]));
+                                }
+                        }
+                        RefreshLoop(overlays);
+                }
 
 		private void RefreshLoop(List<NegativeOverlay> overlays)
 		{
@@ -368,8 +374,46 @@ namespace NegativeScreen
 					}
 					break;
 			}
-			base.WndProc(ref m);
-		}
+                        base.WndProc(ref m);
+                }
+
+                private void ExitApplication()
+                {
+                        mainLoopPaused = false;
+                        notifyIcon.Dispose();
+                        this.Dispose();
+                        Application.Exit();
+                }
+
+                private List<string> GetSelectedDisplays()
+                {
+                        var list = new List<string>();
+                        for (int i = 0; i < displayMenuItems.Count; i++)
+                        {
+                                if (displayMenuItems[i].Checked)
+                                {
+                                        list.Add(Screen.AllScreens[i].DeviceName);
+                                }
+                        }
+                        return list;
+                }
+
+                private void OpenSettings()
+                {
+                        using (var form = new SettingsForm(new List<Screen>(Screen.AllScreens), GetSelectedDisplays()))
+                        {
+                                if (form.ShowDialog() == DialogResult.OK)
+                                {
+                                        var selected = form.GetSelectedDisplays();
+                                        ConfigManager.SaveEnabledDisplays(selected);
+                                        for (int i = 0; i < displayMenuItems.Count; i++)
+                                        {
+                                                displayMenuItems[i].Checked = selected.Contains(Screen.AllScreens[i].DeviceName);
+                                        }
+                                        Initialization();
+                                }
+                        }
+                }
 
 		protected override void Dispose(bool disposing)
 		{
