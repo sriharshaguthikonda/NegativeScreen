@@ -196,9 +196,28 @@ namespace NegativeScreen
 		/// </summary>
 		/// <param name="pEffect"></param>
 		/// <returns></returns>
-		[DllImport("user32.dll", CallingConvention = CallingConvention.StdCall)]
-		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool SetMagnificationDesktopColorEffect(ref ColorEffect pEffect);
+                [DllImport("user32.dll", CallingConvention = CallingConvention.StdCall)]
+                [return: MarshalAs(UnmanagedType.Bool)]
+                public static extern bool SetMagnificationDesktopColorEffect(ref ColorEffect pEffect);
+
+                [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+                public struct DISPLAY_DEVICE
+                {
+                        public int cb;
+                        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+                        public string DeviceName;
+                        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+                        public string DeviceString;
+                        public int StateFlags;
+                        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+                        public string DeviceID;
+                        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+                        public string DeviceKey;
+                }
+
+                [DllImport("user32.dll", CharSet = CharSet.Auto)]
+                [return: MarshalAs(UnmanagedType.Bool)]
+                public static extern bool EnumDisplayDevices(string lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
 
 		#endregion
 

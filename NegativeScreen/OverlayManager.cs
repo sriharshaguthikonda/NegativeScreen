@@ -66,18 +66,28 @@ namespace NegativeScreen
 		private NotifyIcon notifyIcon;
 		private ContextMenuStrip contextMenu;
 
-		public OverlayManager()
-		{
-			contextMenu = new System.Windows.Forms.ContextMenuStrip();
-			foreach (var item in Screen.AllScreens)
-			{
-				contextMenu.Items.Add(new ToolStripMenuItem(item.DeviceName, null, (s, e) =>
-				{
-					Initialization();
-				}) { CheckOnClick = true, Checked = true });
-			}
-			notifyIcon = new NotifyIcon();
-			notifyIcon.ContextMenuStrip = contextMenu;
+                public OverlayManager()
+                {
+                        contextMenu = new System.Windows.Forms.ContextMenuStrip();
+                        foreach (var item in Screen.AllScreens)
+                        {
+                                string name = GetMonitorName(item);
+                                ToolStripMenuItem menuItem = new ToolStripMenuItem(name, null, (s, e) =>
+                                {
+                                        Initialization();
+                                }) { CheckOnClick = true, Checked = true, Tag = item.DeviceName };
+                                contextMenu.Items.Add(menuItem);
+                        }
+                        contextMenu.Items.Add(new ToolStripSeparator());
+                        contextMenu.Items.Add(new ToolStripMenuItem("Exit", null, (s, e) =>
+                        {
+                                mainLoopPaused = false;
+                                notifyIcon.Dispose();
+                                this.Dispose();
+                                Application.Exit();
+                        }));
+                        notifyIcon = new NotifyIcon();
+                        notifyIcon.ContextMenuStrip = contextMenu;
 			notifyIcon.Icon = new Icon(this.Icon, 32, 32);
 			notifyIcon.Visible = true;
 
@@ -167,16 +177,17 @@ namespace NegativeScreen
 				item.Dispose();
 			}
 			overlays = new List<NegativeOverlay>();
-			foreach (var item in Screen.AllScreens)
-			{
-				foreach (ToolStripMenuItem menuItem in this.contextMenu.Items)
-				{
-					if (menuItem.Text == item.DeviceName && menuItem.Checked)
-					{
-						overlays.Add(new NegativeOverlay(item));
-					}
-				}
-			}
+                       foreach (var screen in Screen.AllScreens)
+                       {
+                               foreach (ToolStripItem item in this.contextMenu.Items)
+                               {
+                                       ToolStripMenuItem menuItem = item as ToolStripMenuItem;
+                                       if (menuItem != null && menuItem.Tag != null && menuItem.Tag.ToString() == screen.DeviceName && menuItem.Checked)
+                                       {
+                                               overlays.Add(new NegativeOverlay(screen));
+                                       }
+                               }
+                       }
 			RefreshLoop(overlays);
 		}
 
@@ -371,12 +382,26 @@ namespace NegativeScreen
 			base.WndProc(ref m);
 		}
 
-		protected override void Dispose(bool disposing)
-		{
-			UnregisterHotKeys();
-			NativeMethods.MagUninitialize();
-			base.Dispose(disposing);
-		}
+                protected override void Dispose(bool disposing)
+                {
+                        UnregisterHotKeys();
+                        NativeMethods.MagUninitialize();
+                        base.Dispose(disposing);
+                }
+
+                private static string GetMonitorName(Screen screen)
+                {
+                        NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
+                        device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
+                        if (NativeMethods.EnumDisplayDevices(screen.DeviceName, 0, ref device, 0))
+                        {
+                                if (!string.IsNullOrEmpty(device.DeviceString))
+                                {
+                                        return device.DeviceString.Trim();
+                                }
+                        }
+                        return screen.DeviceName;
+                }
 
 	}
 }

@@ -2,9 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [ work, master ]
+    branches: [ work, master, main ]
   pull_request:
-    branches: [ work, master ]
+    branches: [ work, master, main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,10 +15,11 @@ jobs:
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v1.3
       - name: Build solution
-        run: msbuild NegativeScreen.sln /p:Configuration=Release
+        run: msbuild NegativeScreen.sln /p:Configuration=Release /p:Platform=x64
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: NegativeScreen
-          path: NegativeScreen/bin/Release/
+          path: NegativeScreen/bin/x64/Release/
+          if-no-files-found: error
 
