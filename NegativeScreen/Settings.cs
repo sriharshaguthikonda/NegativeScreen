@@ -1,46 +1,54 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Xml.Serialization;
 using System.Windows.Forms;
 
 namespace NegativeScreen
 {
+    [Serializable]
+    public class Config
+    {
+        public List<string> Monitors = new List<string>();
+        public List<string> Windows = new List<string>();
+        public bool StartMinimized = false;
+    }
+
     static class Settings
     {
-        private static readonly string MonitorConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "monitors.txt");
-        private static readonly string WindowConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "windows.txt");
+        private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.xml");
 
-        public static List<string> LoadSelectedMonitors()
+        public static Config Load()
         {
-            if (File.Exists(MonitorConfigPath))
+            if (File.Exists(ConfigPath))
             {
-                return new List<string>(File.ReadAllLines(MonitorConfigPath));
+                try
+                {
+                    XmlSerializer xs = new XmlSerializer(typeof(Config));
+                    using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
+                    {
+                        return (Config)xs.Deserialize(fs);
+                    }
+                }
+                catch { }
             }
-            List<string> all = new List<string>();
+            Config cfg = new Config();
             foreach (var screen in Screen.AllScreens)
+                cfg.Monitors.Add(screen.DeviceName);
+            return cfg;
+        }
+
+        public static void Save(Config config)
+        {
+            try
             {
-                all.Add(screen.DeviceName);
+                XmlSerializer xs = new XmlSerializer(typeof(Config));
+                using (FileStream fs = new FileStream(ConfigPath, FileMode.Create))
+                {
+                    xs.Serialize(fs, config);
+                }
             }
-            return all;
-        }
-
-        public static List<string> LoadSelectedWindows()
-        {
-            if (File.Exists(WindowConfigPath))
-            {
-                return new List<string>(File.ReadAllLines(WindowConfigPath));
-            }
-            return new List<string>();
-        }
-
-        public static void SaveSelectedMonitors(IEnumerable<string> monitors)
-        {
-            File.WriteAllLines(MonitorConfigPath, new List<string>(monitors).ToArray());
-        }
-
-        public static void SaveSelectedWindows(IEnumerable<string> windows)
-        {
-            File.WriteAllLines(WindowConfigPath, new List<string>(windows).ToArray());
+            catch { }
         }
     }
 }

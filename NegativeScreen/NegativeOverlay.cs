@@ -118,7 +118,7 @@ namespace NegativeScreen
                 RECT rect;
                 if (NativeMethods.GetWindowRect(targetWindow, out rect))
                 {
-                    Rectangle b = new Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+                    Rectangle b = new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
                     if (this.Bounds != b)
                     {
                         this.Location = b.Location;
@@ -134,7 +134,7 @@ namespace NegativeScreen
             RECT r;
             if (NativeMethods.GetWindowRect(hwnd, out r))
             {
-                return new Rectangle(r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top);
+                return new Rectangle(r.left, r.top, r.right - r.left, r.bottom - r.top);
             }
             return Rectangle.Empty;
         }

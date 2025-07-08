@@ -57,29 +57,25 @@ To avoid known bugs relative to the used APIs, please instead run the 64 bits co
 			//or blurry, if the transformation scale is forced to 1.
                         NativeMethods.SetProcessDPIAware();
 
-                        List<string> selected = Settings.LoadSelectedMonitors();
-                        List<string> windows = Settings.LoadSelectedWindows();
-                        using (var form = new MonitorSelectionForm(selected))
+                        Config cfg = Settings.Load();
+                        if (!cfg.StartMinimized)
                         {
-                                if (form.ShowDialog() == DialogResult.OK)
+                                using (var form = new SettingsForm(cfg))
                                 {
-                                        selected = form.Selected;
-                                }
-                                else
-                                {
-                                        return;
+                                        if (form.ShowDialog() == DialogResult.OK)
+                                        {
+                                                cfg = form.Result;
+                                                Settings.Save(cfg);
+                                        }
+                                        else
+                                                return;
                                 }
                         }
-                        using (var wform = new WindowSelectionForm(windows))
+                        OverlayManager manager = new OverlayManager(new List<string>(cfg.Monitors), new List<string>(cfg.Windows));
+                        if (cfg.StartMinimized)
                         {
-                                if (wform.ShowDialog() == DialogResult.OK)
-                                {
-                                        windows = wform.Selected;
-                                }
+                                manager.WindowState = FormWindowState.Minimized;
                         }
-                        Settings.SaveSelectedMonitors(selected);
-                        Settings.SaveSelectedWindows(windows);
-                        OverlayManager manager = new OverlayManager(new List<string>(selected), new List<string>(windows));
                 }
 
 		private static bool IsAnotherInstanceAlreadyRunning()

@@ -88,30 +88,23 @@ namespace NegativeScreen
                         }
                         contextMenu.Items.Add(new ToolStripMenuItem("Settings", null, (s, e) =>
                         {
-                                using (var form = new MonitorSelectionForm(new List<string>(this.selectedMonitors)))
+                                Config cfg = new Config();
+                                cfg.Monitors = new List<string>(this.selectedMonitors);
+                                cfg.Windows = new List<string>(this.selectedWindows);
+                                cfg.StartMinimized = false;
+                                using (var form = new SettingsForm(cfg))
                                 {
                                         if (form.ShowDialog() == DialogResult.OK)
                                         {
-                                                this.selectedMonitors = form.Selected;
+                                                this.selectedMonitors = form.Result.Monitors;
+                                                this.selectedWindows = form.Result.Windows;
+                                                Settings.Save(form.Result);
                                                 foreach (ToolStripItem item in this.contextMenu.Items)
                                                 {
                                                         ToolStripMenuItem mi = item as ToolStripMenuItem;
                                                         if (mi != null && mi.Tag != null)
                                                                 mi.Checked = this.selectedMonitors.Contains(mi.Tag.ToString());
                                                 }
-                                                SaveCurrentSelection();
-                                                Initialization();
-                                        }
-                                }
-                        }));
-                        contextMenu.Items.Add(new ToolStripMenuItem("Windows", null, (s, e) =>
-                        {
-                                using (var form = new WindowSelectionForm(new List<string>(this.selectedWindows)))
-                                {
-                                        if (form.ShowDialog() == DialogResult.OK)
-                                        {
-                                                this.selectedWindows = form.Selected;
-                                                Settings.SaveSelectedWindows(this.selectedWindows);
                                                 Initialization();
                                         }
                                 }
@@ -247,7 +240,10 @@ namespace NegativeScreen
                                 }
                         }
                         this.selectedMonitors = new List<string>(list);
-                        Settings.SaveSelectedMonitors(list);
+                        Config cfg = Settings.Load();
+                        cfg.Monitors = new List<string>(this.selectedMonitors);
+                        cfg.Windows = new List<string>(this.selectedWindows);
+                        Settings.Save(cfg);
                 }
 
                 private static IntPtr FindWindowByKey(string key)

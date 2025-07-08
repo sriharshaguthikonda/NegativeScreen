@@ -11,7 +11,7 @@ This task is joyfully achieved by inverting the colors of your screen.
 Unlike the Windows Magnifier, which is also capable of such color inversion,
 NegativeScreen was specifically designed to be easy and convenient to use.
 
-The application now includes a simple configuration window to choose which monitors are inverted.
+The application now includes a modern settings window to choose which monitors or windows are inverted and whether the app starts minimized.
 
 
 Features:
@@ -24,8 +24,8 @@ allowing blacks and whites inversion, while keeping colors (about) the sames.
 
 Exit the program from the tray icon menu.
 Monitors are listed with their friendly names and resolutions to help identify similar displays.
-Selected monitors are remembered across application restarts.
-Selected windows are remembered across application restarts.
+Selected monitors and windows are remembered across application restarts.
+"Open minimized on startup" preference is also saved.
 
 
 Windows Aero must be enabled, or the program won't start.
