@@ -26,6 +26,8 @@ Exit the program from the tray icon menu.
 Monitors are listed with their friendly names and resolutions to help identify similar displays.
 Selected monitors and windows are remembered across application restarts.
 "Open minimized on startup" preference is also saved.
+Dark mode theme for the settings window.
+Tray icon and settings list displays monitor indices for easier identification.
 
 
 Windows Aero must be enabled, or the program won't start.

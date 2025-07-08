@@ -15,6 +15,7 @@ namespace NegativeScreen
         private Button applyButton = new Button();
         private Button cancelButton = new Button();
         private CheckBox startMinimized = new CheckBox();
+        private CheckBox darkMode = new CheckBox();
 
         private List<string> monitorKeys = new List<string>();
         private List<string> windowKeys = new List<string>();
@@ -64,10 +65,16 @@ namespace NegativeScreen
             startMinimized.Dock = DockStyle.Bottom;
             startMinimized.Checked = current.StartMinimized;
 
+            darkMode.Text = "Dark mode";
+            darkMode.Dock = DockStyle.Bottom;
+            darkMode.Checked = current.DarkMode;
+            darkMode.CheckedChanged += (s, e) => ApplyTheme();
+
             this.Controls.Add(tabs);
             this.Controls.Add(applyButton);
             this.Controls.Add(cancelButton);
             this.Controls.Add(startMinimized);
+            this.Controls.Add(darkMode);
 
             this.AcceptButton = applyButton;
             this.CancelButton = cancelButton;
@@ -75,6 +82,7 @@ namespace NegativeScreen
             applyButton.Click += (s, e) => { CollectResult(); this.DialogResult = DialogResult.OK; };
 
             this.Shown += delegate { LoadWindowsAsync(current.Windows); };
+            ApplyTheme();
         }
 
         private void LoadWindowsAsync(List<string> current)
@@ -148,7 +156,38 @@ namespace NegativeScreen
                     selectedKeys.Add(windowKeys[i]);
                 }
             cfg.StartMinimized = startMinimized.Checked;
+            cfg.DarkMode = darkMode.Checked;
             Result = cfg;
+        }
+
+        private void ApplyTheme()
+        {
+            if (darkMode.Checked)
+            {
+                Color back = Color.FromArgb(45, 45, 48);
+                Color fore = Color.WhiteSmoke;
+                this.BackColor = back;
+                foreach (Control c in this.Controls)
+                {
+                    c.BackColor = back;
+                    c.ForeColor = fore;
+                }
+                monitorList.BackColor = back;
+                monitorList.ForeColor = fore;
+                windowList.BackColor = back;
+                windowList.ForeColor = fore;
+                searchBox.BackColor = Color.FromArgb(30, 30, 30);
+                searchBox.ForeColor = fore;
+            }
+            else
+            {
+                this.BackColor = SystemColors.Control;
+                foreach (Control c in this.Controls)
+                {
+                    c.BackColor = SystemColors.Control;
+                    c.ForeColor = SystemColors.ControlText;
+                }
+            }
         }
     }
 }

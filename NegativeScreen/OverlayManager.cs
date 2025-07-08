@@ -88,7 +88,7 @@ namespace NegativeScreen
                         }
                         contextMenu.Items.Add(new ToolStripMenuItem("Settings", null, (s, e) =>
                         {
-                                Config cfg = new Config();
+                                Config cfg = Settings.Load();
                                 cfg.Monitors = new List<string>(this.selectedMonitors);
                                 cfg.Windows = new List<string>(this.selectedWindows);
                                 cfg.StartMinimized = false;
@@ -463,6 +463,8 @@ namespace NegativeScreen
 
                 internal static string GetMonitorDetail(Screen screen)
                 {
+                        int index = Array.IndexOf(Screen.AllScreens, screen) + 1;
+                        string prefix = "Display " + index + " - ";
                         NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
                         device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
                         if (NativeMethods.EnumDisplayDevices(screen.DeviceName, 0, ref device, 0))
@@ -470,10 +472,10 @@ namespace NegativeScreen
                                 if (!string.IsNullOrEmpty(device.DeviceString))
                                 {
                                         string name = device.DeviceString.Trim();
-                                        return name + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
+                                        return prefix + name + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
                                 }
                         }
-                        return screen.DeviceName + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
+                        return prefix + screen.DeviceName + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
                 }
 
                 internal static string GetMonitorName(Screen screen)

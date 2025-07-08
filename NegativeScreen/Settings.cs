@@ -12,6 +12,7 @@ namespace NegativeScreen
         public List<string> Monitors = new List<string>();
         public List<string> Windows = new List<string>();
         public bool StartMinimized = false;
+        public bool DarkMode = false;
     }
 
     static class Settings
