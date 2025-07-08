@@ -481,14 +481,14 @@ namespace NegativeScreen
                 internal static string GetMonitorDetail(Screen screen)
                 {
                         int index = Array.IndexOf(Screen.AllScreens, screen) + 1;
-                        string prefix = "Display " + index + " - ";
                         Config cfg = Settings.Load();
+                        string id = Settings.GetMonitorId(screen);
                         string alias = null;
                         if (cfg.MonitorLabels != null)
                         {
                                 foreach (var ml in cfg.MonitorLabels)
                                 {
-                                        if (ml.Device == screen.DeviceName)
+                                        if ((!string.IsNullOrEmpty(ml.Id) && ml.Id == id) || ml.Device == screen.DeviceName)
                                         {
                                                 alias = ml.Label;
                                                 break;
@@ -508,7 +508,7 @@ namespace NegativeScreen
                         }
                         if (string.IsNullOrEmpty(name))
                                 name = screen.DeviceName;
-                        return prefix + name + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
+                        return $"Display {index} - {name} [{id}] ({screen.Bounds.Width}x{screen.Bounds.Height})";
                 }
 
                 internal static string GetMonitorName(Screen screen)

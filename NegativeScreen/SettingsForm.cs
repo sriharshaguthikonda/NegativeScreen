@@ -20,6 +20,7 @@ namespace NegativeScreen
         private Button renameButton = new Button();
 
         private Dictionary<string, string> aliases = new Dictionary<string, string>();
+        private List<string> monitorIds = new List<string>();
 
         private List<string> monitorKeys = new List<string>();
         private List<string> windowKeys = new List<string>();
@@ -40,14 +41,16 @@ namespace NegativeScreen
             tabs.TabPages.Add(windows);
             monitorList.Dock = DockStyle.Fill;
             foreach (var ml in current.MonitorLabels)
-                aliases[ml.Device] = ml.Label;
+                aliases[!string.IsNullOrEmpty(ml.Id) ? ml.Id : ml.Device] = ml.Label;
             int i = 0;
             foreach (var screen in Screen.AllScreens)
             {
-                string alias = aliases.ContainsKey(screen.DeviceName) ? aliases[screen.DeviceName] : null;
-                string name = BuildMonitorDisplay(screen, alias);
+                string id = Settings.GetMonitorId(screen);
+                string alias = aliases.ContainsKey(id) ? aliases[id] : null;
+                string name = BuildMonitorDisplay(screen, alias, id);
                 monitorList.Items.Add(name);
                 monitorKeys.Add(screen.DeviceName);
+                monitorIds.Add(id);
                 if (current.Monitors.Contains(screen.DeviceName))
                     monitorList.SetItemChecked(i, true);
                 i++;
@@ -57,6 +60,7 @@ namespace NegativeScreen
             renameButton.Dock = DockStyle.Bottom;
             renameButton.Click += (s, e) => RenameSelectedMonitor();
             monitors.Controls.Add(renameButton);
+            monitorList.KeyDown += (s, e) => { if (e.KeyCode == Keys.F2) { RenameSelectedMonitor(); e.Handled = true; } };
 
             Panel searchPanel = new Panel { Dock = DockStyle.Top, Height = 24 };
             searchBox.Dock = DockStyle.Fill;
@@ -166,8 +170,12 @@ namespace NegativeScreen
                     cfg.Windows.Add(windowKeys[i]);
                     selectedKeys.Add(windowKeys[i]);
                 }
-            foreach (var kv in aliases)
-                cfg.MonitorLabels.Add(new MonitorLabel { Device = kv.Key, Label = kv.Value });
+            for (int i = 0; i < monitorIds.Count; i++)
+            {
+                string id = monitorIds[i];
+                string label = aliases.ContainsKey(id) ? aliases[id] : null;
+                cfg.MonitorLabels.Add(new MonitorLabel { Device = monitorKeys[i], Id = id, Label = label });
+            }
             cfg.StartMinimized = startMinimized.Checked;
             cfg.DarkMode = darkMode.Checked;
             Result = cfg;
@@ -203,24 +211,24 @@ namespace NegativeScreen
             }
         }
 
-        private string BuildMonitorDisplay(Screen screen, string alias)
+        private string BuildMonitorDisplay(Screen screen, string alias, string id)
         {
             int index = Array.IndexOf(Screen.AllScreens, screen) + 1;
             string name = string.IsNullOrEmpty(alias) ? OverlayManager.GetMonitorName(screen) : alias;
-            return $"Display {index} - {name} ({screen.Bounds.Width}x{screen.Bounds.Height})";
+            return $"Display {index} - {name} [{id}] ({screen.Bounds.Width}x{screen.Bounds.Height})";
         }
 
         private void RenameSelectedMonitor()
         {
             int idx = monitorList.SelectedIndex;
             if (idx < 0) return;
-            string key = monitorKeys[idx];
-            string current = aliases.ContainsKey(key) ? aliases[key] : OverlayManager.GetMonitorName(Screen.AllScreens[idx]);
+            string id = monitorIds[idx];
+            string current = aliases.ContainsKey(id) ? aliases[id] : OverlayManager.GetMonitorName(Screen.AllScreens[idx]);
             string input = Prompt("Rename monitor", current);
             if (!string.IsNullOrEmpty(input))
             {
-                aliases[key] = input;
-                monitorList.Items[idx] = BuildMonitorDisplay(Screen.AllScreens[idx], input);
+                aliases[id] = input;
+                monitorList.Items[idx] = BuildMonitorDisplay(Screen.AllScreens[idx], input, id);
             }
         }
 
