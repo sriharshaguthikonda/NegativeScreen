@@ -11,18 +11,20 @@ This task is joyfully achieved by inverting the colors of your screen.
 Unlike the Windows Magnifier, which is also capable of such color inversion,
 NegativeScreen was specifically designed to be easy and convenient to use.
 
-It comes without any graphic interface, but dont worry, this only makes it easier to use!
+The application now includes a simple configuration window to choose which monitors are inverted.
 
 
 Features:
 
 Invert screen's colors :)
+Simple UI to select which monitors to invert.
 
 Different inversion modes, including "smart" modes,
 allowing blacks and whites inversion, while keeping colors (about) the sames.
 
 Exit the program from the tray icon menu.
-The tray icon lists monitors by their friendly names.
+Monitors are listed with their friendly names and resolutions to help identify similar displays.
+Selected monitors are remembered across application restarts.
 
 
 Windows Aero must be enabled, or the program won't start.

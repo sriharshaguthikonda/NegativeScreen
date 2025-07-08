@@ -13,6 +13,10 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v1.3
       - name: Build solution
@@ -28,4 +32,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NegativeScreen-x86
-          path: NegativeScreen/bin/x86Release/net9.0-windows/NegativeScreen.exe
+          path: NegativeScreen/bin/x86/Release/NegativeScreen.exe
