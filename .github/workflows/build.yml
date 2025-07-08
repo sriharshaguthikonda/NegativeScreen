@@ -2,10 +2,14 @@ name: Build
 
 on:
   push:
-    branches:[ work ]
+    branches: [ work, master, main ]
   pull_request:
-    branches: [ work ]
+    branches: [ work, master, main ]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true      # stop duplicate runs on same branch
 
 jobs:
   build:
@@ -19,6 +23,5 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NegativeScreen
+          name: NegativeScreen-${{ github.ref_name }}
           path: NegativeScreen/bin/Release/
-
