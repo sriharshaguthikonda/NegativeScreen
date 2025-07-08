@@ -177,16 +177,17 @@ namespace NegativeScreen
 				item.Dispose();
 			}
 			overlays = new List<NegativeOverlay>();
-                        foreach (var item in Screen.AllScreens)
-                        {
-                                foreach (ToolStripMenuItem menuItem in this.contextMenu.Items)
-                                {
-                                        if (menuItem.Tag != null && menuItem.Tag.ToString() == item.DeviceName && menuItem.Checked)
-                                        {
-                                                overlays.Add(new NegativeOverlay(item));
-                                        }
-                                }
-                        }
+                       foreach (var screen in Screen.AllScreens)
+                       {
+                               foreach (ToolStripItem item in this.contextMenu.Items)
+                               {
+                                       ToolStripMenuItem menuItem = item as ToolStripMenuItem;
+                                       if (menuItem != null && menuItem.Tag != null && menuItem.Tag.ToString() == screen.DeviceName && menuItem.Checked)
+                                       {
+                                               overlays.Add(new NegativeOverlay(screen));
+                                       }
+                               }
+                       }
 			RefreshLoop(overlays);
 		}
 
