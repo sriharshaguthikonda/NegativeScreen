@@ -1,0 +1,5 @@
+C:\Windows_software\Negative_screen_multi_mon_window_specific\NegativeScreen\bin\x64\Release\NegativeScreen.exe
+C:\Windows_software\Negative_screen_multi_mon_window_specific\NegativeScreen\bin\x64\Release\NegativeScreen.pdb
+C:\Windows_software\Negative_screen_multi_mon_window_specific\NegativeScreen\obj\x64\Release\NegativeScreen.csprojResolveAssemblyReference.cache
+C:\Windows_software\Negative_screen_multi_mon_window_specific\NegativeScreen\obj\x64\Release\NegativeScreen.exe
+C:\Windows_software\Negative_screen_multi_mon_window_specific\NegativeScreen\obj\x64\Release\NegativeScreen.pdb
