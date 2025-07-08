@@ -24,9 +24,11 @@ allowing blacks and whites inversion, while keeping colors (about) the sames.
 Exit the program from the tray icon menu.
 The tray icon lists monitors by their friendly names.
 
+
 Windows Aero must be enabled, or the program won't start.
 This prevent some undesirable behaviours (black screens, 100% CPU usage...)
-- Continuous integration with GitHub Actions builds the solution automatically on Windows.
+- Continuous integration with GitHub Actions uses the Node 20 runner to build
+  the solution on Windows and uploads the Release artifacts.
 
 
 Useful controls:

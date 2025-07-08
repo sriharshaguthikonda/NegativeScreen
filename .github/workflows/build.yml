@@ -2,40 +2,27 @@ name: Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ work, master, main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ work, master, main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-
-      - name: Restore
-        run: dotnet restore NegativeScreen/NegativeScreen.csproj
-
-
-      - name: Build x64 Release
-        run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x64
-
-
-
-      - name: Build x86 Release
-        run: dotnet build NegativeScreen/NegativeScreen.csproj -c Release -p:Platform=x86
-
-
-
-      - name: Upload x64 EXE
+      - uses: actions/checkout@v4
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v1.3
+      - name: Build solution
+        run: msbuild NegativeScreen.sln /p:Configuration=Release /p:Platform=x64
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NegativeScreen-x64
-          path: NegativeScreen/bin/x64/Release/net9.0-windows/NegativeScreen.exe
+          name: NegativeScreen
+          path: NegativeScreen/bin/x64/Release/
+          if-no-files-found: error
 
       - name: Upload x86 EXE
         uses: actions/upload-artifact@v4
