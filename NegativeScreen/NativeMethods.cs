@@ -129,9 +129,13 @@ namespace NegativeScreen
 		/// <param name="rect"></param>
 		/// <param name="erase"></param>
 		/// <returns></returns>
-		[DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
-		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool InvalidateRect(IntPtr hWnd, IntPtr rect, [MarshalAs(UnmanagedType.Bool)] bool erase);
+                [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
+                [return: MarshalAs(UnmanagedType.Bool)]
+                public static extern bool InvalidateRect(IntPtr hWnd, IntPtr rect, [MarshalAs(UnmanagedType.Bool)] bool erase);
+
+                [DllImport("user32.dll", SetLastError = true)]
+                [return: MarshalAs(UnmanagedType.Bool)]
+                public static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
 
 		/// <summary>
 		/// </summary>

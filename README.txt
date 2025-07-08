@@ -17,7 +17,7 @@ The application now includes a simple configuration window to choose which monit
 Features:
 
 Invert screen's colors :)
-Simple UI to select which monitors to invert.
+Simple UI to select which monitors or windows to invert.
 
 Different inversion modes, including "smart" modes,
 allowing blacks and whites inversion, while keeping colors (about) the sames.
@@ -25,6 +25,7 @@ allowing blacks and whites inversion, while keeping colors (about) the sames.
 Exit the program from the tray icon menu.
 Monitors are listed with their friendly names and resolutions to help identify similar displays.
 Selected monitors are remembered across application restarts.
+Selected windows are remembered across application restarts.
 
 
 Windows Aero must be enabled, or the program won't start.
@@ -64,9 +65,3 @@ Many thanks to Tom MacLeod who gave me the idea for the "smart" inversion mode :
 
 
 Enjoy!
-
-
-
-
-
-lets see if this build works!

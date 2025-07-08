@@ -58,6 +58,7 @@ To avoid known bugs relative to the used APIs, please instead run the 64 bits co
                         NativeMethods.SetProcessDPIAware();
 
                         List<string> selected = Settings.LoadSelectedMonitors();
+                        List<string> windows = Settings.LoadSelectedWindows();
                         using (var form = new MonitorSelectionForm(selected))
                         {
                                 if (form.ShowDialog() == DialogResult.OK)
@@ -69,8 +70,16 @@ To avoid known bugs relative to the used APIs, please instead run the 64 bits co
                                         return;
                                 }
                         }
+                        using (var wform = new WindowSelectionForm(windows))
+                        {
+                                if (wform.ShowDialog() == DialogResult.OK)
+                                {
+                                        windows = wform.Selected;
+                                }
+                        }
                         Settings.SaveSelectedMonitors(selected);
-                        OverlayManager manager = new OverlayManager(new List<string>(selected));
+                        Settings.SaveSelectedWindows(windows);
+                        OverlayManager manager = new OverlayManager(new List<string>(selected), new List<string>(windows));
                 }
 
 		private static bool IsAnotherInstanceAlreadyRunning()

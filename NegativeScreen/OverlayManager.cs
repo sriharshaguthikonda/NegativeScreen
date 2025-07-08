@@ -22,6 +22,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Drawing;
+using System.Diagnostics;
 
 namespace NegativeScreen
 {
@@ -66,10 +67,12 @@ namespace NegativeScreen
                 private NotifyIcon notifyIcon;
                 private ContextMenuStrip contextMenu;
                 private List<string> selectedMonitors;
+                private List<string> selectedWindows;
 
-                public OverlayManager(List<string> selected)
+                public OverlayManager(List<string> monitors, List<string> windows)
                 {
-                        this.selectedMonitors = new List<string>(selected);
+                        this.selectedMonitors = new List<string>(monitors);
+                        this.selectedWindows = new List<string>(windows);
 
                         contextMenu = new System.Windows.Forms.ContextMenuStrip();
                         foreach (var item in Screen.AllScreens)
@@ -97,6 +100,18 @@ namespace NegativeScreen
                                                                 mi.Checked = this.selectedMonitors.Contains(mi.Tag.ToString());
                                                 }
                                                 SaveCurrentSelection();
+                                                Initialization();
+                                        }
+                                }
+                        }));
+                        contextMenu.Items.Add(new ToolStripMenuItem("Windows", null, (s, e) =>
+                        {
+                                using (var form = new WindowSelectionForm(new List<string>(this.selectedWindows)))
+                                {
+                                        if (form.ShowDialog() == DialogResult.OK)
+                                        {
+                                                this.selectedWindows = form.Selected;
+                                                Settings.SaveSelectedWindows(this.selectedWindows);
                                                 Initialization();
                                         }
                                 }
@@ -211,6 +226,12 @@ namespace NegativeScreen
                                        }
                                }
                        }
+                        foreach (var win in selectedWindows)
+                        {
+                                IntPtr handle = FindWindowByKey(win);
+                                if (handle != IntPtr.Zero)
+                                        overlays.Add(new NegativeOverlay(handle));
+                        }
                         RefreshLoop(overlays);
                 }
 
@@ -227,6 +248,22 @@ namespace NegativeScreen
                         }
                         this.selectedMonitors = new List<string>(list);
                         Settings.SaveSelectedMonitors(list);
+                }
+
+                private static IntPtr FindWindowByKey(string key)
+                {
+                        string[] parts = key.Split('|');
+                        if (parts.Length >= 2)
+                        {
+                                string proc = parts[0];
+                                string title = parts[1];
+                                foreach (var p in Process.GetProcessesByName(proc))
+                                {
+                                        if (p.MainWindowHandle != IntPtr.Zero && p.MainWindowTitle == title)
+                                                return p.MainWindowHandle;
+                                }
+                        }
+                        return IntPtr.Zero;
                 }
 
 		private void RefreshLoop(List<NegativeOverlay> overlays)
@@ -290,14 +327,15 @@ namespace NegativeScreen
 		/// return true on success, false on failure.
 		/// </summary>
 		/// <returns></returns>
-		private bool RefreshOverlay(NegativeOverlay overlay)
-		{
-			try
-			{
-				// Reclaim topmost status. 
-				if (!NativeMethods.SetWindowPos(overlay.Handle, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
-			   (int)SetWindowPosFlags.SWP_NOACTIVATE | (int)SetWindowPosFlags.SWP_NOMOVE | (int)SetWindowPosFlags.SWP_NOSIZE))
-				{
+                private bool RefreshOverlay(NegativeOverlay overlay)
+                {
+                        try
+                        {
+                                overlay.UpdateBounds();
+                                // Reclaim topmost status.
+                                if (!NativeMethods.SetWindowPos(overlay.Handle, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
+                           (int)SetWindowPosFlags.SWP_NOACTIVATE | (int)SetWindowPosFlags.SWP_NOMOVE | (int)SetWindowPosFlags.SWP_NOSIZE))
+                                {
 					throw new Exception("SetWindowPos()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
 				}
 				// Force redraw.

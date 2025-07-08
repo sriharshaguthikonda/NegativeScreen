@@ -1,115 +1,95 @@
-﻿//Copyright 2011-2012 Melvyn Laily
-//http://arcanesanctum.net
-
-//This file is part of NegativeScreen.
-
-//This program is free software: you can redistribute it and/or modify
-//it under the terms of the GNU General Public License as published by
-//the Free Software Foundation, either version 3 of the License, or
-//(at your option) any later version.
-
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU General Public License for more details.
-
-//You should have received a copy of the GNU General Public License
-//along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Drawing;
 
-
 namespace NegativeScreen
 {
-	public class NegativeOverlay : Form
-	{
-		private IntPtr hwndMag;
-		/// <summary>
-		/// used when refreshing the control
-		/// </summary>
-		public IntPtr HwndMag { get { return hwndMag; } }
+    public class NegativeOverlay : Form
+    {
+        private IntPtr hwndMag;
+        private bool trackWindow;
+        private IntPtr targetWindow;
+        public IntPtr HwndMag { get { return hwndMag; } }
 
-		public NegativeOverlay(Screen screen)
-			: base()
-		{
+        public NegativeOverlay(Screen screen) : this(screen.Bounds)
+        {
+        }
 
-			this.StartPosition = FormStartPosition.Manual;
-			this.Location = screen.Bounds.Location;
-			this.Size = new Size(screen.Bounds.Width, screen.Bounds.Height);
-			this.TopMost = true;
-			this.FormBorderStyle = FormBorderStyle.None;
-			this.WindowState = FormWindowState.Normal;
-			this.ShowInTaskbar = false;
+        public NegativeOverlay(IntPtr window) : this(GetWindowRectangle(window))
+        {
+            this.trackWindow = true;
+            this.targetWindow = window;
+        }
 
-			IntPtr hInst = NativeMethods.GetModuleHandle(null);
-			if (hInst == IntPtr.Zero)
-			{
-				throw new Exception("GetModuleHandle()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
-			}
+        private NegativeOverlay(Rectangle bounds) : base()
+        {
+            Initialize(bounds);
+        }
 
-			//set WS_EX_LAYERED a layered window (required)
-			//and WS_EX_TRANSPARENT (mouse and keyboard events pass through the window)
-			if (NativeMethods.SetWindowLong(this.Handle, NativeMethods.GWL_EXSTYLE, (int)ExtendedWindowStyles.WS_EX_LAYERED | (int)ExtendedWindowStyles.WS_EX_TRANSPARENT) == 0)
-			{
-				throw new Exception("SetWindowLong()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
-			}
+        private void Initialize(Rectangle bounds)
+        {
+            this.StartPosition = FormStartPosition.Manual;
+            this.Location = bounds.Location;
+            this.Size = bounds.Size;
+            this.TopMost = true;
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.WindowState = FormWindowState.Normal;
+            this.ShowInTaskbar = false;
 
-			// Make the window opaque.
-			if (!NativeMethods.SetLayeredWindowAttributes(this.Handle, 0, 255, LayeredWindowAttributeFlags.LWA_ALPHA))
-			{
-				throw new Exception("SetLayeredWindowAttributes()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
-			}
+            IntPtr hInst = NativeMethods.GetModuleHandle(null);
+            if (hInst == IntPtr.Zero)
+            {
+                throw new Exception("GetModuleHandle()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+            }
 
-			// Create a magnifier control that fills the client area.
-			hwndMag = NativeMethods.CreateWindowEx(0,
-				NativeMethods.WC_MAGNIFIER,
-				"MagnifierWindow",
-				(int)WindowStyles.WS_CHILD |
-				/*(int)MagnifierStyle.MS_SHOWMAGNIFIEDCURSOR |*/
-				(int)WindowStyles.WS_VISIBLE,
-				0, 0, screen.Bounds.Width, screen.Bounds.Height,
-				this.Handle, IntPtr.Zero, hInst, IntPtr.Zero);
+            if (NativeMethods.SetWindowLong(this.Handle, NativeMethods.GWL_EXSTYLE, (int)ExtendedWindowStyles.WS_EX_LAYERED | (int)ExtendedWindowStyles.WS_EX_TRANSPARENT) == 0)
+            {
+                throw new Exception("SetWindowLong()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+            }
 
-			if (hwndMag == IntPtr.Zero)
-			{
-				throw new Exception("CreateWindowEx()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
-			}
+            if (!NativeMethods.SetLayeredWindowAttributes(this.Handle, 0, 255, LayeredWindowAttributeFlags.LWA_ALPHA))
+            {
+                throw new Exception("SetLayeredWindowAttributes()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+            }
 
-			//initial color transformation: simple negative
-			BuiltinMatrices.ChangeColorEffect(hwndMag, BuiltinMatrices.Negative);
+            hwndMag = NativeMethods.CreateWindowEx(0,
+                    NativeMethods.WC_MAGNIFIER,
+                    "MagnifierWindow",
+                    (int)WindowStyles.WS_CHILD | (int)WindowStyles.WS_VISIBLE,
+                    0, 0, bounds.Width, bounds.Height,
+                    this.Handle, IntPtr.Zero, hInst, IntPtr.Zero);
 
-			if (!NativeMethods.MagSetWindowSource(this.hwndMag, new RECT(screen.Bounds.X, screen.Bounds.Y, screen.Bounds.Right, screen.Bounds.Bottom)))
-			{
-				throw new Exception("MagSetWindowSource()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
-			}
+            if (hwndMag == IntPtr.Zero)
+            {
+                throw new Exception("CreateWindowEx()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+            }
 
-			//reset magnification factor to 1.0
-			//needed when running without aero (otherwise, the screen appears unicolored)
-			Transformation transformation = new Transformation(1.0f);
-			if (!NativeMethods.MagSetWindowTransform(this.hwndMag, ref transformation))
-			{
-				throw new Exception("MagSetWindowTransform()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
-			}
+            BuiltinMatrices.ChangeColorEffect(hwndMag, BuiltinMatrices.Negative);
 
-			try
-			{
-				//fails on Windows Vista
-				bool preventFading = true;
-				if (NativeMethods.DwmSetWindowAttribute(this.Handle, DWMWINDOWATTRIBUTE.DWMWA_EXCLUDED_FROM_PEEK, ref preventFading, sizeof(int)) != 0)
-				{
-					throw new Exception("DwmSetWindowAttribute(DWMWA_EXCLUDED_FROM_PEEK)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
-				}
-			}
-			catch (Exception) { }
+            if (!NativeMethods.MagSetWindowSource(this.hwndMag, new RECT(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom)))
+            {
+                throw new Exception("MagSetWindowSource()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+            }
+
+            Transformation transformation = new Transformation(1.0f);
+            if (!NativeMethods.MagSetWindowTransform(this.hwndMag, ref transformation))
+            {
+                throw new Exception("MagSetWindowTransform()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+            }
 
             try
             {
-                //fails on Windows 8
+                bool preventFading = true;
+                if (NativeMethods.DwmSetWindowAttribute(this.Handle, DWMWINDOWATTRIBUTE.DWMWA_EXCLUDED_FROM_PEEK, ref preventFading, sizeof(int)) != 0)
+                {
+                    throw new Exception("DwmSetWindowAttribute(DWMWA_EXCLUDED_FROM_PEEK)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+                }
+            }
+            catch (Exception) { }
+
+            try
+            {
                 DWMFLIP3DWINDOWPOLICY threeDPolicy = DWMFLIP3DWINDOWPOLICY.DWMFLIP3D_EXCLUDEABOVE;
                 if (NativeMethods.DwmSetWindowAttribute(this.Handle, DWMWINDOWATTRIBUTE.DWMWA_FLIP3D_POLICY, ref threeDPolicy, sizeof(int)) != 0)
                 {
@@ -118,19 +98,45 @@ namespace NegativeScreen
             }
             catch (Exception) { }
 
-			try
-			{
-				//fails on Windows Vista
-				bool disallowPeek = true;
-				if (NativeMethods.DwmSetWindowAttribute(this.Handle, DWMWINDOWATTRIBUTE.DWMWA_DISALLOW_PEEK, ref disallowPeek, sizeof(int)) != 0)
-				{
-					throw new Exception("DwmSetWindowAttribute(DWMWA_DISALLOW_PEEK)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
-				}
-			}
-			catch (Exception) { }
+            try
+            {
+                bool disallowPeek = true;
+                if (NativeMethods.DwmSetWindowAttribute(this.Handle, DWMWINDOWATTRIBUTE.DWMWA_DISALLOW_PEEK, ref disallowPeek, sizeof(int)) != 0)
+                {
+                    throw new Exception("DwmSetWindowAttribute(DWMWA_DISALLOW_PEEK)", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
+                }
+            }
+            catch (Exception) { }
 
-			this.Show();
-		}
+            this.Show();
+        }
 
-	}
+        public void UpdateBounds()
+        {
+            if (trackWindow)
+            {
+                RECT rect;
+                if (NativeMethods.GetWindowRect(targetWindow, out rect))
+                {
+                    Rectangle b = new Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
+                    if (this.Bounds != b)
+                    {
+                        this.Location = b.Location;
+                        this.Size = b.Size;
+                    }
+                    NativeMethods.MagSetWindowSource(this.hwndMag, rect);
+                }
+            }
+        }
+
+        private static Rectangle GetWindowRectangle(IntPtr hwnd)
+        {
+            RECT r;
+            if (NativeMethods.GetWindowRect(hwnd, out r))
+            {
+                return new Rectangle(r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top);
+            }
+            return Rectangle.Empty;
+        }
+    }
 }
