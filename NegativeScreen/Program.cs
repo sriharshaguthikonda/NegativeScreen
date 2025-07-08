@@ -18,6 +18,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace NegativeScreen
 {
@@ -53,9 +55,23 @@ To avoid known bugs relative to the used APIs, please instead run the 64 bits co
 			//without this call, and with custom DPI settings,
 			//the magnified window is either partially out of the screen,
 			//or blurry, if the transformation scale is forced to 1.
-			NativeMethods.SetProcessDPIAware();
-			OverlayManager manager = new OverlayManager();
-		}
+                        NativeMethods.SetProcessDPIAware();
+
+                        List<string> selected = Settings.LoadSelectedMonitors();
+                        using (var form = new MonitorSelectionForm(selected))
+                        {
+                                if (form.ShowDialog() == DialogResult.OK)
+                                {
+                                        selected = form.Selected;
+                                }
+                                else
+                                {
+                                        return;
+                                }
+                        }
+                        Settings.SaveSelectedMonitors(selected);
+                        OverlayManager manager = new OverlayManager(new List<string>(selected));
+                }
 
 		private static bool IsAnotherInstanceAlreadyRunning()
 		{

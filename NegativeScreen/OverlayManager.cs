@@ -28,8 +28,8 @@ namespace NegativeScreen
 	/// <summary>
 	/// inherits from Form so that hot keys can be bound to this "window"...
 	/// </summary>
-	class OverlayManager : Form
-	{
+        class OverlayManager : Form
+        {
 		public const int HALT_HOTKEY_ID = 42;//random id =°
 		public const int TOGGLE_HOTKEY_ID = 43;
 		public const int RESET_TIMER_HOTKEY_ID = 44;
@@ -63,21 +63,44 @@ namespace NegativeScreen
 
 		private bool resolutionHasChanged = false;
 
-		private NotifyIcon notifyIcon;
-		private ContextMenuStrip contextMenu;
+                private NotifyIcon notifyIcon;
+                private ContextMenuStrip contextMenu;
+                private List<string> selectedMonitors;
 
-                public OverlayManager()
+                public OverlayManager(List<string> selected)
                 {
+                        this.selectedMonitors = new List<string>(selected);
+
                         contextMenu = new System.Windows.Forms.ContextMenuStrip();
                         foreach (var item in Screen.AllScreens)
                         {
-                                string name = GetMonitorName(item);
+                                string name = GetMonitorDetail(item);
                                 ToolStripMenuItem menuItem = new ToolStripMenuItem(name, null, (s, e) =>
                                 {
+                                        SaveCurrentSelection();
                                         Initialization();
-                                }) { CheckOnClick = true, Checked = true, Tag = item.DeviceName };
+                                }) { CheckOnClick = true, Checked = this.selectedMonitors.Contains(item.DeviceName), Tag = item.DeviceName };
+                                menuItem.CheckedChanged += (s, e) => SaveCurrentSelection();
                                 contextMenu.Items.Add(menuItem);
                         }
+                        contextMenu.Items.Add(new ToolStripMenuItem("Settings", null, (s, e) =>
+                        {
+                                using (var form = new MonitorSelectionForm(new List<string>(this.selectedMonitors)))
+                                {
+                                        if (form.ShowDialog() == DialogResult.OK)
+                                        {
+                                                this.selectedMonitors = form.Selected;
+                                                foreach (ToolStripItem item in this.contextMenu.Items)
+                                                {
+                                                        ToolStripMenuItem mi = item as ToolStripMenuItem;
+                                                        if (mi != null && mi.Tag != null)
+                                                                mi.Checked = this.selectedMonitors.Contains(mi.Tag.ToString());
+                                                }
+                                                SaveCurrentSelection();
+                                                Initialization();
+                                        }
+                                }
+                        }));
                         contextMenu.Items.Add(new ToolStripSeparator());
                         contextMenu.Items.Add(new ToolStripMenuItem("Exit", null, (s, e) =>
                         {
@@ -170,13 +193,13 @@ namespace NegativeScreen
 			resolutionHasChanged = true;
 		}
 
-		private void Initialization()
-		{
-			foreach (var item in overlays)
-			{
-				item.Dispose();
-			}
-			overlays = new List<NegativeOverlay>();
+                private void Initialization()
+                {
+                        foreach (var item in overlays)
+                        {
+                                item.Dispose();
+                        }
+                        overlays = new List<NegativeOverlay>();
                        foreach (var screen in Screen.AllScreens)
                        {
                                foreach (ToolStripItem item in this.contextMenu.Items)
@@ -188,8 +211,23 @@ namespace NegativeScreen
                                        }
                                }
                        }
-			RefreshLoop(overlays);
-		}
+                        RefreshLoop(overlays);
+                }
+
+                private void SaveCurrentSelection()
+                {
+                        List<string> list = new List<string>();
+                        foreach (ToolStripItem item in this.contextMenu.Items)
+                        {
+                                ToolStripMenuItem mi = item as ToolStripMenuItem;
+                                if (mi != null && mi.Tag != null && mi.Checked)
+                                {
+                                        list.Add(mi.Tag.ToString());
+                                }
+                        }
+                        this.selectedMonitors = new List<string>(list);
+                        Settings.SaveSelectedMonitors(list);
+                }
 
 		private void RefreshLoop(List<NegativeOverlay> overlays)
 		{
@@ -389,7 +427,22 @@ namespace NegativeScreen
                         base.Dispose(disposing);
                 }
 
-                private static string GetMonitorName(Screen screen)
+                internal static string GetMonitorDetail(Screen screen)
+                {
+                        NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
+                        device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
+                        if (NativeMethods.EnumDisplayDevices(screen.DeviceName, 0, ref device, 0))
+                        {
+                                if (!string.IsNullOrEmpty(device.DeviceString))
+                                {
+                                        string name = device.DeviceString.Trim();
+                                        return name + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
+                                }
+                        }
+                        return screen.DeviceName + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
+                }
+
+                internal static string GetMonitorName(Screen screen)
                 {
                         NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
                         device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
