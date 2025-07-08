@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
 using System.Diagnostics;
+using System.Linq;
 
 namespace NegativeScreen
 {
@@ -16,6 +17,9 @@ namespace NegativeScreen
         private Button cancelButton = new Button();
         private CheckBox startMinimized = new CheckBox();
         private CheckBox darkMode = new CheckBox();
+        private Button renameButton = new Button();
+
+        private Dictionary<string, string> aliases = new Dictionary<string, string>();
 
         private List<string> monitorKeys = new List<string>();
         private List<string> windowKeys = new List<string>();
@@ -35,10 +39,13 @@ namespace NegativeScreen
             tabs.TabPages.Add(monitors);
             tabs.TabPages.Add(windows);
             monitorList.Dock = DockStyle.Fill;
+            foreach (var ml in current.MonitorLabels)
+                aliases[ml.Device] = ml.Label;
             int i = 0;
             foreach (var screen in Screen.AllScreens)
             {
-                string name = OverlayManager.GetMonitorDetail(screen);
+                string alias = aliases.ContainsKey(screen.DeviceName) ? aliases[screen.DeviceName] : null;
+                string name = BuildMonitorDisplay(screen, alias);
                 monitorList.Items.Add(name);
                 monitorKeys.Add(screen.DeviceName);
                 if (current.Monitors.Contains(screen.DeviceName))
@@ -46,6 +53,10 @@ namespace NegativeScreen
                 i++;
             }
             monitors.Controls.Add(monitorList);
+            renameButton.Text = "Rename";
+            renameButton.Dock = DockStyle.Bottom;
+            renameButton.Click += (s, e) => RenameSelectedMonitor();
+            monitors.Controls.Add(renameButton);
 
             Panel searchPanel = new Panel { Dock = DockStyle.Top, Height = 24 };
             searchBox.Dock = DockStyle.Fill;
@@ -155,6 +166,8 @@ namespace NegativeScreen
                     cfg.Windows.Add(windowKeys[i]);
                     selectedKeys.Add(windowKeys[i]);
                 }
+            foreach (var kv in aliases)
+                cfg.MonitorLabels.Add(new MonitorLabel { Device = kv.Key, Label = kv.Value });
             cfg.StartMinimized = startMinimized.Checked;
             cfg.DarkMode = darkMode.Checked;
             Result = cfg;
@@ -188,6 +201,47 @@ namespace NegativeScreen
                     c.ForeColor = SystemColors.ControlText;
                 }
             }
+        }
+
+        private string BuildMonitorDisplay(Screen screen, string alias)
+        {
+            int index = Array.IndexOf(Screen.AllScreens, screen) + 1;
+            string name = string.IsNullOrEmpty(alias) ? OverlayManager.GetMonitorName(screen) : alias;
+            return $"Display {index} - {name} ({screen.Bounds.Width}x{screen.Bounds.Height})";
+        }
+
+        private void RenameSelectedMonitor()
+        {
+            int idx = monitorList.SelectedIndex;
+            if (idx < 0) return;
+            string key = monitorKeys[idx];
+            string current = aliases.ContainsKey(key) ? aliases[key] : OverlayManager.GetMonitorName(Screen.AllScreens[idx]);
+            string input = Prompt("Rename monitor", current);
+            if (!string.IsNullOrEmpty(input))
+            {
+                aliases[key] = input;
+                monitorList.Items[idx] = BuildMonitorDisplay(Screen.AllScreens[idx], input);
+            }
+        }
+
+        private static string Prompt(string title, string value)
+        {
+            using (Form f = new Form())
+            {
+                f.Text = title;
+                f.FormBorderStyle = FormBorderStyle.FixedDialog;
+                f.StartPosition = FormStartPosition.CenterParent;
+                f.Width = 300;
+                f.Height = 120;
+                TextBox box = new TextBox { Text = value, Dock = DockStyle.Top };
+                Button ok = new Button { Text = "OK", Dock = DockStyle.Bottom, DialogResult = DialogResult.OK };
+                f.Controls.Add(box);
+                f.Controls.Add(ok);
+                f.AcceptButton = ok;
+                if (f.ShowDialog() == DialogResult.OK)
+                    return box.Text;
+            }
+            return null;
         }
     }
 }

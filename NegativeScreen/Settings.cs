@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace NegativeScreen
 {
@@ -13,6 +14,14 @@ namespace NegativeScreen
         public List<string> Windows = new List<string>();
         public bool StartMinimized = false;
         public bool DarkMode = false;
+        public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
+    }
+
+    [Serializable]
+    public class MonitorLabel
+    {
+        public string Device;
+        public string Label;
     }
 
     static class Settings
@@ -35,7 +44,10 @@ namespace NegativeScreen
             }
             Config cfg = new Config();
             foreach (var screen in Screen.AllScreens)
+            {
                 cfg.Monitors.Add(screen.DeviceName);
+                cfg.MonitorLabels.Add(new MonitorLabel { Device = screen.DeviceName, Label = GetMonitorFriendlyName(screen) });
+            }
             return cfg;
         }
 
@@ -50,6 +62,18 @@ namespace NegativeScreen
                 }
             }
             catch { }
+        }
+
+        private static string GetMonitorFriendlyName(Screen screen)
+        {
+            NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
+            device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
+            if (NativeMethods.EnumDisplayDevices(screen.DeviceName, 0, ref device, 0))
+            {
+                if (!string.IsNullOrEmpty(device.DeviceString))
+                    return device.DeviceString.Trim();
+            }
+            return screen.DeviceName;
         }
     }
 }

@@ -12,6 +12,7 @@ Unlike the Windows Magnifier, which is also capable of such color inversion,
 NegativeScreen was specifically designed to be easy and convenient to use.
 
 The application now includes a modern settings window to choose which monitors or windows are inverted and whether the app starts minimized.
+You can give each monitor a custom name so similar displays are easier to tell apart.
 
 
 Features:
@@ -24,6 +25,7 @@ allowing blacks and whites inversion, while keeping colors (about) the sames.
 
 Exit the program from the tray icon menu.
 Monitors are listed with their friendly names and resolutions to help identify similar displays.
+You can also assign custom names to each monitor from the settings window, and these names are saved for future sessions.
 Selected monitors and windows are remembered across application restarts.
 "Open minimized on startup" preference is also saved.
 Dark mode theme for the settings window.

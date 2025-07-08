@@ -482,17 +482,33 @@ namespace NegativeScreen
                 {
                         int index = Array.IndexOf(Screen.AllScreens, screen) + 1;
                         string prefix = "Display " + index + " - ";
-                        NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
-                        device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
-                        if (NativeMethods.EnumDisplayDevices(screen.DeviceName, 0, ref device, 0))
+                        Config cfg = Settings.Load();
+                        string alias = null;
+                        if (cfg.MonitorLabels != null)
                         {
-                                if (!string.IsNullOrEmpty(device.DeviceString))
+                                foreach (var ml in cfg.MonitorLabels)
                                 {
-                                        string name = device.DeviceString.Trim();
-                                        return prefix + name + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
+                                        if (ml.Device == screen.DeviceName)
+                                        {
+                                                alias = ml.Label;
+                                                break;
+                                        }
                                 }
                         }
-                        return prefix + screen.DeviceName + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
+                        string name = alias;
+                        if (string.IsNullOrEmpty(name))
+                        {
+                                NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
+                                device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
+                                if (NativeMethods.EnumDisplayDevices(screen.DeviceName, 0, ref device, 0))
+                                {
+                                        if (!string.IsNullOrEmpty(device.DeviceString))
+                                                name = device.DeviceString.Trim();
+                                }
+                        }
+                        if (string.IsNullOrEmpty(name))
+                                name = screen.DeviceName;
+                        return prefix + name + " (" + screen.Bounds.Width + "x" + screen.Bounds.Height + ")";
                 }
 
                 internal static string GetMonitorName(Screen screen)
