@@ -11,6 +11,7 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
+
       - uses: actions/checkout@v4
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v1.3
@@ -23,3 +24,8 @@ jobs:
           path: NegativeScreen/bin/x64/Release/
           if-no-files-found: error
 
+      - name: Upload x86 EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: NegativeScreen-x86
+          path: NegativeScreen/bin/x86Release/net9.0-windows/NegativeScreen.exe
