@@ -37,8 +37,7 @@ namespace NegativeScreen
 		public const int INCREASE_TIMER_HOTKEY_ID = 45;
 		public const int DECREASE_TIMER_HOTKEY_ID = 46;
 
-		//TODO: maybe I should think about loops and config file...
-		public const int MODE1_HOTKEY_ID = 51;
+                public const int MODE1_HOTKEY_ID = 51;
 		public const int MODE2_HOTKEY_ID = 52;
 		public const int MODE3_HOTKEY_ID = 53;
 		public const int MODE4_HOTKEY_ID = 54;
@@ -68,6 +67,7 @@ namespace NegativeScreen
                 private ContextMenuStrip contextMenu;
                 private List<string> selectedMonitors;
                 private List<string> selectedWindows;
+                private EventHandler displaySettingsHandler;
 
                 public OverlayManager(List<string> monitors, List<string> windows)
                 {
@@ -198,7 +198,8 @@ namespace NegativeScreen
 				throw new Exception("MagInitialize()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
 			}
 
-			Microsoft.Win32.SystemEvents.DisplaySettingsChanged += new EventHandler(SystemEvents_DisplaySettingsChanged);
+                        displaySettingsHandler = new EventHandler(SystemEvents_DisplaySettingsChanged);
+                        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += displaySettingsHandler;
 
 			Initialization();
 		}
@@ -474,6 +475,11 @@ namespace NegativeScreen
                 protected override void Dispose(bool disposing)
                 {
                         UnregisterHotKeys();
+                        if (displaySettingsHandler != null)
+                                Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= displaySettingsHandler;
+                        foreach (var ov in overlays)
+                                ov.Dispose();
+                        overlays.Clear();
                         NativeMethods.MagUninitialize();
                         base.Dispose(disposing);
                 }
