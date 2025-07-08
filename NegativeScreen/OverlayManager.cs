@@ -92,21 +92,30 @@ namespace NegativeScreen
                                 cfg.Monitors = new List<string>(this.selectedMonitors);
                                 cfg.Windows = new List<string>(this.selectedWindows);
                                 cfg.StartMinimized = false;
-                                using (var form = new SettingsForm(cfg))
+
+                                SetOverlaysVisible(false);
+                                try
                                 {
-                                        if (form.ShowDialog() == DialogResult.OK)
+                                        using (var form = new SettingsForm(cfg))
                                         {
-                                                this.selectedMonitors = form.Result.Monitors;
-                                                this.selectedWindows = form.Result.Windows;
-                                                Settings.Save(form.Result);
-                                                foreach (ToolStripItem item in this.contextMenu.Items)
+                                                if (form.ShowDialog() == DialogResult.OK)
                                                 {
-                                                        ToolStripMenuItem mi = item as ToolStripMenuItem;
-                                                        if (mi != null && mi.Tag != null)
-                                                                mi.Checked = this.selectedMonitors.Contains(mi.Tag.ToString());
+                                                        this.selectedMonitors = form.Result.Monitors;
+                                                        this.selectedWindows = form.Result.Windows;
+                                                        Settings.Save(form.Result);
+                                                        foreach (ToolStripItem item in this.contextMenu.Items)
+                                                        {
+                                                                ToolStripMenuItem mi = item as ToolStripMenuItem;
+                                                                if (mi != null && mi.Tag != null)
+                                                                        mi.Checked = this.selectedMonitors.Contains(mi.Tag.ToString());
+                                                        }
+                                                        Initialization();
                                                 }
-                                                Initialization();
                                         }
+                                }
+                                finally
+                                {
+                                        SetOverlaysVisible(true);
                                 }
                         }));
                         contextMenu.Items.Add(new ToolStripSeparator());
@@ -352,9 +361,9 @@ namespace NegativeScreen
 			}
 		}
 
-		private void UnregisterHotKeys()
-		{
-			NativeMethods.UnregisterHotKey(this.Handle, HALT_HOTKEY_ID);
+                private void UnregisterHotKeys()
+                {
+                        NativeMethods.UnregisterHotKey(this.Handle, HALT_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, TOGGLE_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, RESET_TIMER_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, INCREASE_TIMER_HOTKEY_ID);
@@ -369,8 +378,16 @@ namespace NegativeScreen
 			NativeMethods.UnregisterHotKey(this.Handle, MODE7_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, MODE8_HOTKEY_ID);
 			NativeMethods.UnregisterHotKey(this.Handle, MODE9_HOTKEY_ID);
-			NativeMethods.UnregisterHotKey(this.Handle, MODE10_HOTKEY_ID);
-		}
+                        NativeMethods.UnregisterHotKey(this.Handle, MODE10_HOTKEY_ID);
+                }
+
+                private void SetOverlaysVisible(bool visible)
+                {
+                        foreach (var ov in overlays)
+                        {
+                                ov.Visible = visible;
+                        }
+                }
 
 		protected override void WndProc(ref Message m)
 		{

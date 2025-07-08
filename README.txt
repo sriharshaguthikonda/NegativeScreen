@@ -28,6 +28,7 @@ Selected monitors and windows are remembered across application restarts.
 "Open minimized on startup" preference is also saved.
 Dark mode theme for the settings window.
 Tray icon and settings list displays monitor indices for easier identification.
+Settings window temporarily hides overlays so it stays visible on inverted monitors.
 
 
 Windows Aero must be enabled, or the program won't start.
