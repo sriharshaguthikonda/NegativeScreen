@@ -1,4 +1,4 @@
-﻿//Copyright 2011-2012 Melvyn Laily
+//Copyright 2011-2012 Melvyn Laily
 //http://arcanesanctum.net
 
 //This file is part of NegativeScreen.
@@ -130,6 +130,18 @@ namespace NegativeScreen
                         notifyIcon.ContextMenuStrip = contextMenu;
 			notifyIcon.Icon = new Icon(this.Icon, 32, 32);
 			notifyIcon.Visible = true;
+                        notifyIcon.DoubleClick += (s, e) =>
+                        {
+                            // Find and click the Settings menu item
+                            foreach (ToolStripItem item in contextMenu.Items)
+                            {
+                                if (item.Text == "Settings")
+                                {
+                                    item.PerformClick();
+                                    break;
+                                }
+                            }
+                        };
 
 			if (!NativeMethods.RegisterHotKey(this.Handle, HALT_HOTKEY_ID, KeyModifiers.MOD_WIN | KeyModifiers.MOD_ALT, Keys.H))
 			{

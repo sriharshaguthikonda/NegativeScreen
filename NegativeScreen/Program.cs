@@ -1,4 +1,4 @@
-﻿//Copyright 2011-2012 Melvyn Laily
+//Copyright 2011-2012 Melvyn Laily
 //http://arcanesanctum.net
 
 //This file is part of NegativeScreen.
@@ -46,12 +46,8 @@ To avoid known bugs relative to the used APIs, please instead run the 64 bits co
 					return;
 				}
 			}
-			//check whether the current application is already running
-			if (IsAnotherInstanceAlreadyRunning())
-			{
-				System.Windows.Forms.MessageBox.Show("The application is already running!", "Warning", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information, System.Windows.Forms.MessageBoxDefaultButton.Button1);
-				return;
-			}
+			// Check for and terminate any existing instances
+			TerminateExistingInstances();
 			//without this call, and with custom DPI settings,
 			//the magnified window is either partially out of the screen,
 			//or blurry, if the transformation scale is forced to 1.
@@ -77,6 +73,33 @@ To avoid known bugs relative to the used APIs, please instead run the 64 bits co
                                 manager.WindowState = FormWindowState.Minimized;
                         }
                 }
+
+		private static void TerminateExistingInstances()
+		{
+			Process me = Process.GetCurrentProcess();
+			Process[] processes = Process.GetProcessesByName(me.ProcessName);
+			
+			foreach (Process process in processes)
+			{
+				try
+				{
+					// Skip current process
+					if (process.Id == me.Id) continue;
+					
+					// Only terminate processes with the same executable path
+					if (process.MainModule.FileName == me.MainModule.FileName)
+					{
+						process.Kill();
+						// Give the process a moment to shut down
+						process.WaitForExit(1000);
+					}
+				}
+				catch (Exception)
+				{
+					// Ignore any errors when trying to terminate processes
+				}
+			}
+		}
 
 		private static bool IsAnotherInstanceAlreadyRunning()
 		{

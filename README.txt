@@ -72,4 +72,15 @@ Reset timer: 10ms
 Many thanks to Tom MacLeod who gave me the idea for the "smart" inversion mode :)
 
 
+Build instructions :
+
+ my custom version:
+- [ ] msbuild /p:Configuration=Release /p:Platform=x64
+
+- [ ] move to and replace "C:\Program Files\Negative screen\NegativeScreen-custom-multi-monitor.exe" (requires admin, do manually)
+
+
+
+
+
 Enjoy!
