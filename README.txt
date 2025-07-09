@@ -33,6 +33,7 @@ Dark mode is enabled by default on first launch.
 Press F2 in the monitor list to quickly rename a selected display.
 Tray icon and settings list displays monitor indices for easier identification.
 Settings window temporarily hides overlays so it stays visible on inverted monitors.
+Exiting the application now cleans up all overlays and system event hooks so no stray processes remain.
 
 
 Windows Aero must be enabled, or the program won't start.
