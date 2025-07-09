@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<Config xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Monitors>
+    <string>\\.\DISPLAY1</string>
+  </Monitors>
+  <Windows />
+  <StartMinimized>false</StartMinimized>
+  <DarkMode>false</DarkMode>
+  <MonitorLabels>
+    <MonitorLabel>
+      <Device>\\.\DISPLAY1</Device>
+      <Label>Lenovo 24q-35</Label>
+    </MonitorLabel>
+  </MonitorLabels>
+</Config>

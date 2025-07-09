@@ -50,11 +50,18 @@ namespace NegativeScreen
                 cfg.DarkMode = true;
             }
 
+            // Only add all monitors if this is a new config
+            if (cfg.Monitors.Count == 0)
+            {
+                foreach (var screen in Screen.AllScreens)
+                {
+                    cfg.Monitors.Add(screen.DeviceName);
+                }
+            }
+
+            // Update monitor labels for all screens
             foreach (var screen in Screen.AllScreens)
             {
-                if (!cfg.Monitors.Contains(screen.DeviceName))
-                    cfg.Monitors.Add(screen.DeviceName);
-
                 string id = GetMonitorId(screen);
                 var ml = cfg.MonitorLabels.Find(m => (!string.IsNullOrEmpty(m.Id) && m.Id == id) || m.Device == screen.DeviceName);
                 if (ml == null)
@@ -98,7 +105,7 @@ namespace NegativeScreen
             return screen.DeviceName;
         }
 
-        private static string GetMonitorId(Screen screen)
+        public static string GetMonitorId(Screen screen)
         {
             NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
             device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
