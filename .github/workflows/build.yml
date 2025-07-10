@@ -28,8 +28,8 @@ jobs:
           path: NegativeScreen/bin/x64/Release/
           if-no-files-found: error
 
-      - name: Upload x86 EXE
+      - name: Upload x64 EXE
         uses: actions/upload-artifact@v4
         with:
-          name: NegativeScreen-x86
-          path: NegativeScreen/bin/x86/Release/NegativeScreen.exe
+          name: NegativeScreen-x64
+          path: NegativeScreen/bin/x64/Release/NegativeScreen.exe
