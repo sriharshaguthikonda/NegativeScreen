@@ -225,47 +225,118 @@ namespace NegativeScreen
 
                 private void Initialization()
                 {
-                        foreach (var item in overlays)
+                    // Dispose existing overlays
+                    foreach (var item in overlays)
+                    {
+                        item.Dispose();
+                    }
+                    overlays = new List<NegativeOverlay>();
+
+                    // Get current monitor configuration
+                    var currentScreens = Screen.AllScreens.ToDictionary(s => s.DeviceName, s => s);
+                    
+                    // Update the context menu items to reflect current monitor configuration
+                    var menuItems = this.contextMenu.Items
+                        .OfType<ToolStripMenuItem>()
+                        .Where(item => item.Tag != null)
+                        .ToDictionary(item => item.Tag.ToString(), item => item);
+
+                    // Clear existing monitor items except the last two (Settings and Exit)
+                    for (int i = contextMenu.Items.Count - 1; i >= 0; i--)
+                    {
+                        if (contextMenu.Items[i] is ToolStripMenuItem menuItem && 
+                            menuItem.Tag != null)
                         {
-                                item.Dispose();
+                            contextMenu.Items.RemoveAt(i);
                         }
-                        overlays = new List<NegativeOverlay>();
-                       foreach (var screen in Screen.AllScreens)
-                       {
-                               foreach (ToolStripItem item in this.contextMenu.Items)
-                               {
-                                       ToolStripMenuItem menuItem = item as ToolStripMenuItem;
-                                       if (menuItem != null && menuItem.Tag != null && menuItem.Tag.ToString() == screen.DeviceName && menuItem.Checked)
-                                       {
-                                               overlays.Add(new NegativeOverlay(screen));
-                                       }
-                               }
-                       }
-                        foreach (var win in selectedWindows)
+                    }
+
+                    // Rebuild monitor menu items with current configuration
+                    int insertPos = 0;
+                    foreach (var screen in Screen.AllScreens)
+                    {
+                        string monitorId = Settings.GetMonitorId(screen);
+                        string friendlyName = Settings.GetMonitorFriendlyName(screen);
+                        
+                        // Check if this monitor was previously selected by either device name or ID
+                        bool wasSelected = this.selectedMonitors.Contains(screen.DeviceName) || 
+                                         this.selectedMonitors.Any(m => m == monitorId);
+                        
+                        var menuItem = new ToolStripMenuItem($"{friendlyName} ({screen.DeviceName})", null, 
+                            (s, e) => 
+                            {
+                                SaveCurrentSelection();
+                                Initialization();
+                            }) 
+                        { 
+                            CheckOnClick = true, 
+                            Checked = wasSelected, 
+                            Tag = screen.DeviceName 
+                        };
+                        
+                        menuItem.Checked = wasSelected;
+                        menuItem.CheckedChanged += (s, e) => SaveCurrentSelection();
+                        contextMenu.Items.Insert(insertPos++, menuItem);
+                    }
+
+                    // Save the updated selection
+                    SaveCurrentSelection();
+
+                    // Create overlays for selected monitors
+                    foreach (var screen in Screen.AllScreens)
+                    {
+                        string monitorId = Settings.GetMonitorId(screen);
+                        if (this.selectedMonitors.Contains(screen.DeviceName) || 
+                            this.selectedMonitors.Any(m => m == monitorId))
                         {
-                                IntPtr handle = FindWindowByKey(win);
-                                if (handle != IntPtr.Zero)
-                                        overlays.Add(new NegativeOverlay(handle));
+                            overlays.Add(new NegativeOverlay(screen));
                         }
-                        RefreshLoop(overlays);
+                    }
+
+                    // Create window overlays
+                    foreach (var win in selectedWindows)
+                    {
+                        IntPtr handle = FindWindowByKey(win);
+                        if (handle != IntPtr.Zero)
+                            overlays.Add(new NegativeOverlay(handle));
+                    }
+
+                    RefreshLoop(overlays);
                 }
 
                 private void SaveCurrentSelection()
                 {
-                        List<string> list = new List<string>();
-                        foreach (ToolStripItem item in this.contextMenu.Items)
+                    var selectedMonitorIds = new List<string>();
+                    
+                    // Get currently connected screens
+                    var currentScreens = Screen.AllScreens.ToDictionary(s => s.DeviceName, s => s);
+                    
+                    // Save monitor selections
+                    foreach (ToolStripItem item in this.contextMenu.Items)
+                    {
+                        if (item is ToolStripMenuItem menuItem && menuItem.Tag != null && menuItem.Checked)
                         {
-                                ToolStripMenuItem mi = item as ToolStripMenuItem;
-                                if (mi != null && mi.Tag != null && mi.Checked)
+                            string deviceName = menuItem.Tag.ToString();
+                            if (currentScreens.TryGetValue(deviceName, out var screen))
+                            {
+                                // Save both device name and monitor ID for better reliability
+                                selectedMonitorIds.Add(deviceName);
+                                string monitorId = Settings.GetMonitorId(screen);
+                                if (!selectedMonitorIds.Contains(monitorId))
                                 {
-                                        list.Add(mi.Tag.ToString());
+                                    selectedMonitorIds.Add(monitorId);
                                 }
+                            }
                         }
-                        this.selectedMonitors = new List<string>(list);
-                        Config cfg = Settings.Load();
-                        cfg.Monitors = new List<string>(this.selectedMonitors);
-                        cfg.Windows = new List<string>(this.selectedWindows);
-                        Settings.Save(cfg);
+                    }
+                    
+                    this.selectedMonitors = selectedMonitorIds.Distinct().ToList();
+                    
+                    // Save to settings
+                    Config cfg = Settings.Load();
+                    cfg.Monitors = new List<string>(this.selectedMonitors);
+                    cfg.Windows = new List<string>(this.selectedWindows);
+                    Settings.Save(cfg);
                 }
 
                 private static IntPtr FindWindowByKey(string key)
