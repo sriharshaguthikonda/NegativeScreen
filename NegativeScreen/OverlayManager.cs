@@ -23,6 +23,7 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Diagnostics;
+using System.Linq;
 
 namespace NegativeScreen
 {
