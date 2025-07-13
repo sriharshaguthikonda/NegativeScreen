@@ -71,11 +71,45 @@ namespace NegativeScreen
             windows.Controls.Add(searchPanel);
             windowList.Dock = DockStyle.Fill;
 
+            // Create a panel to hold the buttons
+            Panel buttonPanel = new Panel { Dock = DockStyle.Bottom, Height = 30 };
+            
+            // Configure Save button
+            Button saveButton = new Button { Text = "Save", Width = 80, Height = 24 };
+            saveButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            saveButton.Left = 10;
+            saveButton.Top = 3;
+            saveButton.Click += (s, e) => { 
+                CollectResult(); 
+                Settings.Save(Result);
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            };
+            
+            // Configure Apply button
             applyButton.Text = "Apply";
-            applyButton.Dock = DockStyle.Bottom;
+            applyButton.Width = 80;
+            applyButton.Height = 24;
+            applyButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            applyButton.Left = saveButton.Right + 10;
+            applyButton.Top = 3;
+            
+            // Configure Cancel button
             cancelButton.Text = "Cancel";
-            cancelButton.Dock = DockStyle.Bottom;
+            cancelButton.Width = 80;
+            cancelButton.Height = 24;
+            cancelButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            cancelButton.Left = applyButton.Right + 10;
+            cancelButton.Top = 3;
             cancelButton.DialogResult = DialogResult.Cancel;
+            
+            // Add buttons to the panel
+            buttonPanel.Controls.Add(saveButton);
+            buttonPanel.Controls.Add(applyButton);
+            buttonPanel.Controls.Add(cancelButton);
+            
+            // Add the panel to the form
+            this.Controls.Add(buttonPanel);
             startMinimized.Text = "Open minimized on startup";
             startMinimized.Dock = DockStyle.Bottom;
             startMinimized.Checked = current.StartMinimized;
@@ -86,15 +120,23 @@ namespace NegativeScreen
             darkMode.CheckedChanged += (s, e) => ApplyTheme();
 
             this.Controls.Add(tabs);
-            this.Controls.Add(applyButton);
-            this.Controls.Add(cancelButton);
+            // Add other controls
             this.Controls.Add(startMinimized);
             this.Controls.Add(darkMode);
 
-            this.AcceptButton = applyButton;
+            // Set form properties
+            this.AcceptButton = saveButton;  // Make Save the default button for Enter key
             this.CancelButton = cancelButton;
 
-            applyButton.Click += (s, e) => { CollectResult(); this.DialogResult = DialogResult.OK; };
+            // Apply button just collects the result but doesn't close the form
+            applyButton.Click += (s, e) => { 
+                CollectResult(); 
+                // Don't close the form, just apply changes in memory
+                MessageBox.Show("Changes applied. Don't forget to click 'Save' to make them permanent.", 
+                    "Settings Applied", 
+                    MessageBoxButtons.OK, 
+                    MessageBoxIcon.Information);
+            };
 
             this.Shown += delegate { LoadWindowsAsync(current.Windows); };
             ApplyTheme();

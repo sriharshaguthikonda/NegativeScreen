@@ -80,6 +80,11 @@ namespace NegativeScreen
             return cfg;
         }
 
+        /// <summary>
+        /// Saves the configuration to the settings file.
+        /// IMPORTANT: This should only be called when the user explicitly requests to save settings.
+        /// </summary>
+        /// <param name="config">The configuration to save</param>
         public static void Save(Config config)
         {
             try
@@ -90,7 +95,10 @@ namespace NegativeScreen
                     xs.Serialize(fs, config);
                 }
             }
-            catch { }
+            catch 
+            { 
+                // Log error if needed
+            }
         }
 
         public static string GetMonitorFriendlyName(Screen screen)
