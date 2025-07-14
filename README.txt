@@ -76,7 +76,8 @@ Build instructions :
 
  my custom version:
 - [ ] msbuild /p:Configuration=Release /p:Platform=x64					
-
+- [ ] kill NegativeScreen.exe if running
+- [ ] kill NegativeScreen-custom-multi-monitor.exe if running
 - [ ] move to and replace "C:\Program Files\Negative screen\NegativeScreen-custom-multi-monitor.exe" (requires admin, do manually)
 
 

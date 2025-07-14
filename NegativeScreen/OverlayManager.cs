@@ -588,17 +588,27 @@ namespace NegativeScreen
                         string name = alias;
                         if (string.IsNullOrEmpty(name))
                         {
+                            // First try to get the friendly name from the settings
+                            name = Settings.GetMonitorFriendlyName(screen);
+                            
+                            // If that doesn't work, fall back to the device string
+                            if (string.IsNullOrEmpty(name) || name == screen.DeviceName)
+                            {
                                 NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
                                 device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
                                 if (NativeMethods.EnumDisplayDevices(screen.DeviceName, 0, ref device, 0))
                                 {
-                                        if (!string.IsNullOrEmpty(device.DeviceString))
-                                                name = device.DeviceString.Trim();
+                                    if (!string.IsNullOrEmpty(device.DeviceString))
+                                        name = device.DeviceString.Trim();
                                 }
+                            }
                         }
-                        if (string.IsNullOrEmpty(name))
-                                name = screen.DeviceName;
-                        return $"Display {index} - {name} [{id}] ({screen.Bounds.Width}x{screen.Bounds.Height})";
+                        
+                        // If we still don't have a name, use the device name
+                        if (string.IsNullOrEmpty(name) || name == screen.DeviceName)
+                            name = $"Display {index}";
+                            
+                        return $"{name} ({screen.Bounds.Width}x{screen.Bounds.Height})";
                 }
 
                 internal static string GetMonitorName(Screen screen)

@@ -1,6 +1,20 @@
 To Do in next releases:
--let the user configure the options in a config file
-	(shortcuts, ...)
-	
-correct multi screen bug (black part)
-auto-switch on light/dark | when browser on/off
+
+
+
+
+ display 1, display 2, display 3 labels changes with the order of the monitor connection but what should happen is the label or the name of the monitor should be associated with the id of the monitor. i think the ids don't change when you connect the order differently.
+
+
+ and there should be a tag for each of the monitor for dark mode. the dark mode in the settings file appears for all the monitors.
+
+
+ the rename button does not appear in the settings of the app. there is apply and save button.
+
+
+
+ the ui looks so basic and atrocious. make the ui better.
+
+
+ 
+
