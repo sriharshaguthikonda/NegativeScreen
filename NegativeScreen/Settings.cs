@@ -35,6 +35,14 @@ namespace NegativeScreen
 
         public static Config Load()
         {
+            // Ensure the settings file exists so we always load from a valid source
+            if (!File.Exists(ConfigPath))
+            {
+                // Create a default configuration and persist it
+                var defaultCfg = new Config { DarkMode = true };
+                Save(defaultCfg);
+            }
+
             Config cfg = null;
             if (File.Exists(ConfigPath))
             {

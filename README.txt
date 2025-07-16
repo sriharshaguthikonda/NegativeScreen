@@ -30,6 +30,7 @@ Selected monitors and windows are remembered across application restarts.
 "Open minimized on startup" preference is also saved.
 Dark mode theme for the settings window.
 Dark mode is enabled by default on first launch.
+The settings file is automatically created on first run if it does not exist.
 Per-monitor dark mode values from the settings file are now correctly parsed,
 even when malformed entries are encountered.
 Press F2 in the monitor list to quickly rename a selected display.
