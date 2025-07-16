@@ -32,6 +32,7 @@ Dark mode theme for the settings window.
 Dark mode is enabled by default on first launch.
 Per-monitor dark mode values from the settings file are now correctly parsed,
 even when malformed entries are encountered.
+The application now generates a default settings.xml on first run if none exists.
 Press F2 in the monitor list to quickly rename a selected display.
 Tray icon and settings list displays monitor indices for easier identification.
 Settings window temporarily hides overlays so it stays visible on inverted monitors.
