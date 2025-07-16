@@ -51,7 +51,7 @@ namespace NegativeScreen
                         {
                             Device = screen.DeviceName,
                             Id = GetMonitorId(screen),
-                            Label = OverlayManager.GetMonitorName(screen)
+                            Label = GetMonitorFriendlyName(screen, false)
                         });
                     }
 
@@ -131,14 +131,14 @@ namespace NegativeScreen
                 var ml = cfg.MonitorLabels.Find(m => (!string.IsNullOrEmpty(m.Id) && m.Id == id) || m.Device == screen.DeviceName);
                 if (ml == null)
                 {
-                    cfg.MonitorLabels.Add(new MonitorLabel { Device = screen.DeviceName, Id = id, Label = GetMonitorFriendlyName(screen) });
+                    cfg.MonitorLabels.Add(new MonitorLabel { Device = screen.DeviceName, Id = id, Label = GetMonitorFriendlyName(screen, false) });
                 }
                 else
                 {
                     ml.Device = screen.DeviceName;
                     ml.Id = id;
                     if (string.IsNullOrEmpty(ml.Label))
-                        ml.Label = GetMonitorFriendlyName(screen);
+                        ml.Label = GetMonitorFriendlyName(screen, false);
                 }
             }
 
@@ -172,11 +172,30 @@ namespace NegativeScreen
             {
                 // First check if we have a stored label for this monitor
                 string monitorId = GetMonitorId(screen);
-                var config = Load();
-                var existingLabel = config.MonitorLabels.Find(m => (m.Id == monitorId) || (m.Device == screen.DeviceName));
-                if (existingLabel != null && !string.IsNullOrEmpty(existingLabel.Label))
+                Config config = null;
+                if (useCached && File.Exists(ConfigPath))
                 {
-                    return existingLabel.Label.Trim();
+                    try
+                    {
+                        XmlSerializer xs = new XmlSerializer(typeof(Config));
+                        using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
+                        {
+                            config = (Config)xs.Deserialize(fs);
+                        }
+                    }
+                    catch
+                    {
+                        config = null;
+                    }
+                }
+
+                if (config != null)
+                {
+                    var existingLabel = config.MonitorLabels.Find(m => (m.Id == monitorId) || (m.Device == screen.DeviceName));
+                    if (existingLabel != null && !string.IsNullOrEmpty(existingLabel.Label))
+                    {
+                        return existingLabel.Label.Trim();
+                    }
                 }
 
                 // Then try to get the friendly name from the monitor's EDID data
