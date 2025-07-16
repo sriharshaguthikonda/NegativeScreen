@@ -36,6 +36,26 @@ namespace NegativeScreen
         public static Config Load()
         {
             Config cfg = null;
+
+            // If the configuration file doesn't exist, create it with default values
+            if (!File.Exists(ConfigPath))
+            {
+                try
+                {
+                    cfg = new Config();
+                    cfg.DarkMode = true;
+                    XmlSerializer xsCreate = new XmlSerializer(typeof(Config));
+                    using (FileStream fs = new FileStream(ConfigPath, FileMode.Create))
+                    {
+                        xsCreate.Serialize(fs, cfg);
+                    }
+                }
+                catch
+                {
+                    cfg = null;
+                }
+            }
+
             if (File.Exists(ConfigPath))
             {
                 try
