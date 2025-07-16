@@ -35,6 +35,8 @@ namespace NegativeScreen
         public static Config Load()
         {
             Config cfg = null;
+            bool needSave = false;
+
             if (File.Exists(ConfigPath))
             {
                 try
@@ -45,12 +47,18 @@ namespace NegativeScreen
                         cfg = (Config)xs.Deserialize(fs);
                     }
                 }
-                catch { cfg = null; }
+                catch
+                {
+                    cfg = null;
+                    needSave = true;
+                }
             }
+
             if (cfg == null)
             {
                 cfg = new Config();
                 cfg.DarkMode = true;
+                needSave = true;
             }
 
             // Only add all monitors if this is a new config
@@ -80,6 +88,11 @@ namespace NegativeScreen
                 }
             }
 
+            if (needSave)
+            {
+                Save(cfg);
+            }
+
             return cfg;
         }
 
@@ -93,13 +106,18 @@ namespace NegativeScreen
             try
             {
                 XmlSerializer xs = new XmlSerializer(typeof(Config));
+                string dir = Path.GetDirectoryName(ConfigPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
                 using (FileStream fs = new FileStream(ConfigPath, FileMode.Create))
                 {
                     xs.Serialize(fs, config);
                 }
             }
-            catch 
-            { 
+            catch
+            {
                 // Log error if needed
             }
         }
