@@ -36,7 +36,8 @@ namespace NegativeScreen
         public static Config Load()
         {
             Config cfg = null;
-            if (File.Exists(ConfigPath))
+            bool fileExists = File.Exists(ConfigPath);
+            if (fileExists)
             {
                 try
                 {
@@ -107,6 +108,18 @@ namespace NegativeScreen
                     ml.Id = id;
                     if (string.IsNullOrEmpty(ml.Label))
                         ml.Label = GetMonitorFriendlyName(screen);
+                }
+            }
+
+            if (!fileExists)
+            {
+                try
+                {
+                    Save(cfg);
+                }
+                catch
+                {
+                    // Ignore errors during initial save
                 }
             }
 

@@ -37,6 +37,8 @@ Tray icon and settings list displays monitor indices for easier identification.
 Settings window temporarily hides overlays so it stays visible on inverted monitors.
 Exiting the application now cleans up all overlays and system event hooks so no stray processes remain.
 
+If the settings file does not exist, it is now created automatically on first launch.
+
 
 Windows Aero must be enabled, or the program won't start.
 This prevent some undesirable behaviours (black screens, 100% CPU usage...)
