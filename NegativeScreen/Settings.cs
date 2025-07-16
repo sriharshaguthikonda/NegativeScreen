@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
@@ -39,10 +40,18 @@ namespace NegativeScreen
             {
                 try
                 {
+                    // Preprocess the XML to handle cases where DarkMode elements
+                    // are written as self-closing tags with xsi:nil="false".
+                    string xml = File.ReadAllText(ConfigPath);
+                    xml = Regex.Replace(xml,
+                        "<DarkMode\\s+xsi:nil=\"false\"\\s*/>",
+                        "<DarkMode>false</DarkMode>",
+                        RegexOptions.IgnoreCase);
+
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
-                    using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
+                    using (StringReader sr = new StringReader(xml))
                     {
-                        cfg = (Config)xs.Deserialize(fs);
+                        cfg = (Config)xs.Deserialize(sr);
                     }
                 }
                 catch { cfg = null; }
