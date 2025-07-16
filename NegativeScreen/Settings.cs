@@ -43,6 +43,18 @@ namespace NegativeScreen
                 try
                 {
                     cfg = new Config { DarkMode = true };
+
+                    foreach (var screen in Screen.AllScreens)
+                    {
+                        cfg.Monitors.Add(screen.DeviceName);
+                        cfg.MonitorLabels.Add(new MonitorLabel
+                        {
+                            Device = screen.DeviceName,
+                            Id = GetMonitorId(screen),
+                            Label = OverlayManager.GetMonitorName(screen)
+                        });
+                    }
+
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Create))
                     {
