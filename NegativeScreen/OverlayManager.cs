@@ -284,13 +284,19 @@ namespace NegativeScreen
                     SaveCurrentSelection();
 
                     // Create overlays for selected monitors
+                    Config cfg = Settings.Load();
                     foreach (var screen in Screen.AllScreens)
                     {
                         string monitorId = Settings.GetMonitorId(screen);
-                        if (this.selectedMonitors.Contains(screen.DeviceName) || 
+                        if (this.selectedMonitors.Contains(screen.DeviceName) ||
                             this.selectedMonitors.Any(m => m == monitorId))
                         {
-                            overlays.Add(new NegativeOverlay(screen));
+                            var overlay = new NegativeOverlay(screen);
+                            bool? monitorDark = Settings.GetMonitorDarkMode(screen);
+                            bool dark = monitorDark ?? cfg.DarkMode;
+                            BuiltinMatrices.ChangeColorEffect(overlay.HwndMag,
+                                dark ? BuiltinMatrices.Negative : BuiltinMatrices.Identity);
+                            overlays.Add(overlay);
                         }
                     }
 
@@ -299,7 +305,13 @@ namespace NegativeScreen
                     {
                         IntPtr handle = FindWindowByKey(win);
                         if (handle != IntPtr.Zero)
-                            overlays.Add(new NegativeOverlay(handle));
+                        {
+                            var overlay = new NegativeOverlay(handle);
+                            bool dark = cfg.DarkMode;
+                            BuiltinMatrices.ChangeColorEffect(overlay.HwndMag,
+                                dark ? BuiltinMatrices.Negative : BuiltinMatrices.Identity);
+                            overlays.Add(overlay);
+                        }
                     }
 
                     RefreshLoop(overlays);
