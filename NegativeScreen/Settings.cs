@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
+using System.Xml.Linq;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
@@ -45,7 +46,36 @@ namespace NegativeScreen
                         cfg = (Config)xs.Deserialize(fs);
                     }
                 }
-                catch { cfg = null; }
+                catch
+                {
+                    // Attempt to clean up common serialization issues, such as
+                    // a <DarkMode xsi:nil="false" /> element with no value.
+                    try
+                    {
+                        var doc = System.Xml.Linq.XDocument.Load(ConfigPath);
+                        var xsi = "http://www.w3.org/2001/XMLSchema-instance";
+                        foreach (var dm in doc.Descendants("DarkMode"))
+                        {
+                            var nilAttr = dm.Attribute(System.Xml.Linq.XName.Get("nil", xsi));
+                            if (nilAttr != null && nilAttr.Value == "false" && string.IsNullOrWhiteSpace(dm.Value))
+                            {
+                                // Remove the xsi:nil attribute and default the value to false
+                                nilAttr.Remove();
+                                dm.Value = "false";
+                            }
+                        }
+
+                        using (var reader = new System.IO.StringReader(doc.ToString()))
+                        {
+                            XmlSerializer xs = new XmlSerializer(typeof(Config));
+                            cfg = (Config)xs.Deserialize(reader);
+                        }
+                    }
+                    catch
+                    {
+                        cfg = null;
+                    }
+                }
             }
             if (cfg == null)
             {
