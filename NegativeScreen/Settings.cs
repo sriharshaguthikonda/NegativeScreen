@@ -93,7 +93,7 @@ namespace NegativeScreen
             catch { }
         }
 
-        private static string GetMonitorFriendlyName(Screen screen)
+        internal static string GetMonitorFriendlyName(Screen screen)
         {
             NativeMethods.DISPLAY_DEVICE device = new NativeMethods.DISPLAY_DEVICE();
             device.cb = Marshal.SizeOf(typeof(NativeMethods.DISPLAY_DEVICE));
