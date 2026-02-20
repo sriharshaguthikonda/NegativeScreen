@@ -64,16 +64,19 @@ namespace NegativeScreen
 
 		private bool resolutionHasChanged = false;
 
-                private NotifyIcon notifyIcon;
-                private ContextMenuStrip contextMenu;
-                private List<string> selectedMonitors;
-                private List<string> selectedWindows;
-                private EventHandler displaySettingsHandler;
+        private NotifyIcon notifyIcon;
+        private ContextMenuStrip contextMenu;
+        private List<string> selectedMonitors;
+        private List<string> selectedWindows;
+        private EventHandler displaySettingsHandler;
+        private bool useMagnifiedCursor;
+        private bool isCursorHidden;
 
-                public OverlayManager(List<string> monitors, List<string> windows)
-                {
-                        this.selectedMonitors = new List<string>(monitors);
-                        this.selectedWindows = new List<string>(windows);
+        public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor)
+        {
+                this.selectedMonitors = new List<string>(monitors);
+                this.selectedWindows = new List<string>(windows);
+                this.useMagnifiedCursor = useMagnifiedCursor;
 
                         contextMenu = new System.Windows.Forms.ContextMenuStrip();
                         foreach (var item in Screen.AllScreens)
@@ -103,6 +106,7 @@ namespace NegativeScreen
                                                 {
                                                         this.selectedMonitors = form.Result.Monitors;
                                                         this.selectedWindows = form.Result.Windows;
+                                                        this.useMagnifiedCursor = form.Result.UseMagnifiedCursor;
                                                         Settings.Save(form.Result);
                                                         foreach (ToolStripItem item in this.contextMenu.Items)
                                                         {
@@ -290,7 +294,7 @@ namespace NegativeScreen
                         if (this.selectedMonitors.Contains(screen.DeviceName) || 
                             this.selectedMonitors.Any(m => m == monitorId))
                         {
-                            overlays.Add(new NegativeOverlay(screen));
+                            overlays.Add(new NegativeOverlay(screen, this.useMagnifiedCursor));
                         }
                     }
 
@@ -299,9 +303,10 @@ namespace NegativeScreen
                     {
                         IntPtr handle = FindWindowByKey(win);
                         if (handle != IntPtr.Zero)
-                            overlays.Add(new NegativeOverlay(handle));
+                            overlays.Add(new NegativeOverlay(handle, this.useMagnifiedCursor));
                     }
 
+                    UpdateCursorVisibility(true);
                     RefreshLoop(overlays);
                 }
 
@@ -391,18 +396,12 @@ namespace NegativeScreen
 				//pause
 				while (mainLoopPaused)
 				{
-					for (int i = 0; i < overlays.Count; i++)
-					{
-						overlays[i].Visible = false;
-					}
+					SetOverlaysVisible(false);
 					System.Threading.Thread.Sleep(PAUSE_SLEEP_TIME);
 					Application.DoEvents();
 					if (!mainLoopPaused)
 					{
-						for (int i = 0; i < overlays.Count; i++)
-						{
-							overlays[i].Visible = true;
-						}
+						SetOverlaysVisible(true);
 					}
 				}
 			}
@@ -472,6 +471,36 @@ namespace NegativeScreen
                         {
                                 ov.Visible = visible;
                         }
+                        UpdateCursorVisibility(visible);
+                }
+
+                private void UpdateCursorVisibility(bool overlaysVisible)
+                {
+                        if (!overlaysVisible || overlays.Count == 0)
+                        {
+                                ShowSystemCursor();
+                                return;
+                        }
+                        if (useMagnifiedCursor)
+                                HideSystemCursor();
+                        else
+                                ShowSystemCursor();
+                }
+
+                private void HideSystemCursor()
+                {
+                        if (isCursorHidden)
+                                return;
+                        Cursor.Hide();
+                        isCursorHidden = true;
+                }
+
+                private void ShowSystemCursor()
+                {
+                        if (!isCursorHidden)
+                                return;
+                        Cursor.Show();
+                        isCursorHidden = false;
                 }
 
 		protected override void WndProc(ref Message m)
@@ -564,6 +593,7 @@ namespace NegativeScreen
                         foreach (var ov in overlays)
                                 ov.Dispose();
                         overlays.Clear();
+                        UpdateCursorVisibility(false);
                         NativeMethods.MagUninitialize();
                         base.Dispose(disposing);
                 }

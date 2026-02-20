@@ -12,22 +12,22 @@ namespace NegativeScreen
         private IntPtr targetWindow;
         public IntPtr HwndMag { get { return hwndMag; } }
 
-        public NegativeOverlay(Screen screen) : this(screen.Bounds)
+        public NegativeOverlay(Screen screen, bool showMagnifiedCursor) : this(screen.Bounds, showMagnifiedCursor)
         {
         }
 
-        public NegativeOverlay(IntPtr window) : this(GetWindowRectangle(window))
+        public NegativeOverlay(IntPtr window, bool showMagnifiedCursor) : this(GetWindowRectangle(window), showMagnifiedCursor)
         {
             this.trackWindow = true;
             this.targetWindow = window;
         }
 
-        private NegativeOverlay(Rectangle bounds) : base()
+        private NegativeOverlay(Rectangle bounds, bool showMagnifiedCursor) : base()
         {
-            Initialize(bounds);
+            Initialize(bounds, showMagnifiedCursor);
         }
 
-        private void Initialize(Rectangle bounds)
+        private void Initialize(Rectangle bounds, bool showMagnifiedCursor)
         {
             this.StartPosition = FormStartPosition.Manual;
             this.Location = bounds.Location;
@@ -53,10 +53,16 @@ namespace NegativeScreen
                 throw new Exception("SetLayeredWindowAttributes()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
             }
 
+            int magnifierStyle = (int)WindowStyles.WS_CHILD | (int)WindowStyles.WS_VISIBLE;
+            if (showMagnifiedCursor)
+            {
+                magnifierStyle |= (int)MagnifierStyle.MS_SHOWMAGNIFIEDCURSOR;
+            }
+
             hwndMag = NativeMethods.CreateWindowEx(0,
                     NativeMethods.WC_MAGNIFIER,
                     "MagnifierWindow",
-                    (int)WindowStyles.WS_CHILD | (int)WindowStyles.WS_VISIBLE | (int)MagnifierStyle.MS_SHOWMAGNIFIEDCURSOR,
+                    magnifierStyle,
                     0, 0, bounds.Width, bounds.Height,
                     this.Handle, IntPtr.Zero, hInst, IntPtr.Zero);
 

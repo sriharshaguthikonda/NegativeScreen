@@ -17,6 +17,7 @@ namespace NegativeScreen
         private Button cancelButton = new Button();
         private CheckBox startMinimized = new CheckBox();
         private CheckBox darkMode = new CheckBox();
+        private CheckBox magnifiedCursor = new CheckBox();
         private Button renameButton = new Button();
 
         private Dictionary<string, string> aliases = new Dictionary<string, string>();
@@ -80,6 +81,10 @@ namespace NegativeScreen
             startMinimized.Dock = DockStyle.Bottom;
             startMinimized.Checked = current.StartMinimized;
 
+            magnifiedCursor.Text = "Use magnified cursor (hide system cursor)";
+            magnifiedCursor.Dock = DockStyle.Bottom;
+            magnifiedCursor.Checked = current.UseMagnifiedCursor;
+
             darkMode.Text = "Dark mode";
             darkMode.Dock = DockStyle.Bottom;
             darkMode.Checked = current.DarkMode;
@@ -89,6 +94,7 @@ namespace NegativeScreen
             this.Controls.Add(applyButton);
             this.Controls.Add(cancelButton);
             this.Controls.Add(startMinimized);
+            this.Controls.Add(magnifiedCursor);
             this.Controls.Add(darkMode);
 
             this.AcceptButton = applyButton;
@@ -178,6 +184,7 @@ namespace NegativeScreen
             }
             cfg.StartMinimized = startMinimized.Checked;
             cfg.DarkMode = darkMode.Checked;
+            cfg.UseMagnifiedCursor = magnifiedCursor.Checked;
             Result = cfg;
         }
 

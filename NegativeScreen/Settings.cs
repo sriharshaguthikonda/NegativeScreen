@@ -14,6 +14,7 @@ namespace NegativeScreen
         public List<string> Windows = new List<string>();
         public bool StartMinimized = false;
         public bool DarkMode = true;
+        public bool UseMagnifiedCursor = true;
         public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
     }
 
@@ -32,10 +33,20 @@ namespace NegativeScreen
         public static Config Load()
         {
             Config cfg = null;
+            bool hasCursorSetting = false;
             if (File.Exists(ConfigPath))
             {
                 try
                 {
+                    try
+                    {
+                        string xml = File.ReadAllText(ConfigPath);
+                        hasCursorSetting = xml.IndexOf("<UseMagnifiedCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
+                    }
+                    catch
+                    {
+                        hasCursorSetting = false;
+                    }
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
                     {
@@ -48,6 +59,12 @@ namespace NegativeScreen
             {
                 cfg = new Config();
                 cfg.DarkMode = true;
+                cfg.UseMagnifiedCursor = true;
+            }
+            else if (!hasCursorSetting)
+            {
+                // Default to magnified cursor for older config files.
+                cfg.UseMagnifiedCursor = true;
             }
 
             // Only add all monitors if this is a new config
