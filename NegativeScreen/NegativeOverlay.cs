@@ -56,7 +56,7 @@ namespace NegativeScreen
             hwndMag = NativeMethods.CreateWindowEx(0,
                     NativeMethods.WC_MAGNIFIER,
                     "MagnifierWindow",
-                    (int)WindowStyles.WS_CHILD | (int)WindowStyles.WS_VISIBLE,
+                    (int)WindowStyles.WS_CHILD | (int)WindowStyles.WS_VISIBLE | (int)MagnifierStyle.MS_SHOWMAGNIFIEDCURSOR,
                     0, 0, bounds.Width, bounds.Height,
                     this.Handle, IntPtr.Zero, hInst, IntPtr.Zero);
 
@@ -123,6 +123,8 @@ namespace NegativeScreen
                     {
                         this.Location = b.Location;
                         this.Size = b.Size;
+                        NativeMethods.SetWindowPos(this.hwndMag, IntPtr.Zero, 0, 0, b.Width, b.Height,
+                            (int)SetWindowPosFlags.SWP_NOACTIVATE | (int)SetWindowPosFlags.SWP_NOZORDER);
                     }
                     NativeMethods.MagSetWindowSource(this.hwndMag, rect);
                 }
