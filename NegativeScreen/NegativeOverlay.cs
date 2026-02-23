@@ -117,7 +117,7 @@ namespace NegativeScreen
             this.Show();
         }
 
-        public bool UpdateBounds()
+        public new bool UpdateBounds()
         {
             if (trackWindow)
             {
