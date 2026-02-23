@@ -76,6 +76,10 @@ namespace NegativeScreen
         private bool useMagnifiedCursor;
         private bool isCursorHidden;
         private bool forceSoftwareCursor;
+        private bool EffectiveMagnifiedCursor
+        {
+                get { return useMagnifiedCursor && !forceSoftwareCursor; }
+        }
         private uint savedMouseTrails;
         private bool hasSavedMouseTrails;
 
@@ -305,7 +309,7 @@ namespace NegativeScreen
                         if (this.selectedMonitors.Contains(screen.DeviceName) || 
                             this.selectedMonitors.Any(m => m == monitorId))
                         {
-                            overlays.Add(new NegativeOverlay(screen, this.useMagnifiedCursor));
+                            overlays.Add(new NegativeOverlay(screen, this.EffectiveMagnifiedCursor));
                         }
                     }
 
@@ -314,7 +318,7 @@ namespace NegativeScreen
                     {
                         IntPtr handle = FindWindowByKey(win);
                         if (handle != IntPtr.Zero)
-                            overlays.Add(new NegativeOverlay(handle, this.useMagnifiedCursor));
+                            overlays.Add(new NegativeOverlay(handle, this.EffectiveMagnifiedCursor));
                     }
 
                     UpdateCursorVisibility(true);
@@ -517,6 +521,8 @@ namespace NegativeScreen
                         if (useMagnifiedCursor)
                                 HideSystemCursor();
                         else
+                                ShowSystemCursor();
+                        if (forceSoftwareCursor)
                                 ShowSystemCursor();
                 }
 

@@ -89,11 +89,29 @@ namespace NegativeScreen
             softwareCursor.Text = "Force software cursor (minimal trails)";
             softwareCursor.Dock = DockStyle.Bottom;
             softwareCursor.Checked = current.ForceSoftwareCursor;
+            softwareCursor.CheckedChanged += (s, e) =>
+            {
+                if (softwareCursor.Checked)
+                {
+                    magnifiedCursor.Checked = false;
+                    magnifiedCursor.Enabled = false;
+                }
+                else
+                {
+                    magnifiedCursor.Enabled = true;
+                }
+            };
 
             darkMode.Text = "Dark mode";
             darkMode.Dock = DockStyle.Bottom;
             darkMode.Checked = current.DarkMode;
             darkMode.CheckedChanged += (s, e) => ApplyTheme();
+
+            if (softwareCursor.Checked)
+            {
+                magnifiedCursor.Checked = false;
+                magnifiedCursor.Enabled = false;
+            }
 
             this.Controls.Add(tabs);
             this.Controls.Add(applyButton);
