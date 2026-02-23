@@ -66,6 +66,7 @@ namespace NegativeScreen
 		private List<NegativeOverlay> overlays = new List<NegativeOverlay>();
 
 		private bool resolutionHasChanged = false;
+		private bool isShuttingDown = false;
 
         private NotifyIcon notifyIcon;
         private ContextMenuStrip contextMenu;
@@ -124,16 +125,14 @@ namespace NegativeScreen
                                 }
                                 finally
                                 {
-                                        SetOverlaysVisible(true);
+                                        if (!isShuttingDown)
+                                                SetOverlaysVisible(true);
                                 }
                         }));
                         contextMenu.Items.Add(new ToolStripSeparator());
                         contextMenu.Items.Add(new ToolStripMenuItem("Exit", null, (s, e) =>
                         {
-                                mainLoopPaused = false;
-                                notifyIcon.Dispose();
-                                this.Dispose();
-                                Application.Exit();
+                                Shutdown(true);
                         }));
                         notifyIcon = new NotifyIcon();
                         notifyIcon.ContextMenuStrip = contextMenu;
@@ -370,6 +369,11 @@ namespace NegativeScreen
 			bool noError = true;
 			while (noError)
 			{
+				if (isShuttingDown)
+				{
+					noError = false;
+					break;
+				}
 
 				if (resolutionHasChanged)
 				{
@@ -425,7 +429,8 @@ namespace NegativeScreen
 			if (noError)
 			{
 				//the loop broke because of a screen resolution change
-				Initialization();
+				if (!isShuttingDown)
+					Initialization();
 			}
 		}
 
@@ -559,10 +564,7 @@ namespace NegativeScreen
 					{
 						case HALT_HOTKEY_ID:
 							//otherwise, if paused, the application never stops
-							mainLoopPaused = false;
-							notifyIcon.Dispose();
-							this.Dispose();
-							Application.Exit();
+							Shutdown(true);
 							break;
 						case TOGGLE_HOTKEY_ID:
 							this.mainLoopPaused = !mainLoopPaused;
@@ -618,8 +620,58 @@ namespace NegativeScreen
 			base.WndProc(ref m);
 		}
 
+		internal void Shutdown(bool exitApplication)
+		{
+			if (isShuttingDown)
+				return;
+			isShuttingDown = true;
+			mainLoopPaused = false;
+			try
+			{
+				SetOverlaysVisible(false);
+			}
+			catch
+			{
+				// best-effort during shutdown
+			}
+			if (notifyIcon != null)
+			{
+				try
+				{
+					notifyIcon.Visible = false;
+				}
+				catch
+				{
+				}
+				try
+				{
+					notifyIcon.Dispose();
+				}
+				catch
+				{
+				}
+			}
+			try
+			{
+				this.Close();
+			}
+			catch
+			{
+			}
+			try
+			{
+				this.Dispose();
+			}
+			catch
+			{
+			}
+			if (exitApplication)
+				Application.Exit();
+		}
+
                 protected override void Dispose(bool disposing)
                 {
+                        isShuttingDown = true;
                         UnregisterHotKeys();
                         if (displaySettingsHandler != null)
                                 Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= displaySettingsHandler;
