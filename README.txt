@@ -66,7 +66,7 @@ Useful controls:
 
 Default constants:
 Increase/Decrease: +/-10ms
-Reset timer: 10ms
+Reset timer: 16ms
 
 
 Many thanks to Tom MacLeod who gave me the idea for the "smart" inversion mode :)

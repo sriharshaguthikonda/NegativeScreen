@@ -50,7 +50,8 @@ namespace NegativeScreen
 		public const int MODE10_HOTKEY_ID = 60;
 
 		private const int DEFAULT_INCREASE_STEP = 10;
-		private const int DEFAULT_SLEEP_TIME = DEFAULT_INCREASE_STEP;
+		private const int DEFAULT_SLEEP_TIME = 16;
+		private const int TOPMOST_REFRESH_INTERVAL_MS = 250;
 		private const int PAUSE_SLEEP_TIME = 100;
 
 		/// <summary>
@@ -59,6 +60,7 @@ namespace NegativeScreen
 		private bool mainLoopPaused = false;
 
 		private int refreshInterval = DEFAULT_SLEEP_TIME;
+		private int lastTopmostRefreshTick;
 
 		private List<NegativeOverlay> overlays = new List<NegativeOverlay>();
 
@@ -72,11 +74,12 @@ namespace NegativeScreen
         private bool useMagnifiedCursor;
         private bool isCursorHidden;
 
-        public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor)
-        {
-                this.selectedMonitors = new List<string>(monitors);
-                this.selectedWindows = new List<string>(windows);
-                this.useMagnifiedCursor = useMagnifiedCursor;
+                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor)
+                {
+                        this.selectedMonitors = new List<string>(monitors);
+                        this.selectedWindows = new List<string>(windows);
+                        this.useMagnifiedCursor = useMagnifiedCursor;
+                        this.lastTopmostRefreshTick = Environment.TickCount;
 
                         contextMenu = new System.Windows.Forms.ContextMenuStrip();
                         foreach (var item in Screen.AllScreens)
@@ -375,9 +378,17 @@ namespace NegativeScreen
 					break;
 				}
 
+				bool refreshTopmost = false;
+				int now = Environment.TickCount;
+				if (unchecked(now - lastTopmostRefreshTick) >= TOPMOST_REFRESH_INTERVAL_MS)
+				{
+					refreshTopmost = true;
+					lastTopmostRefreshTick = now;
+				}
+
 				for (int i = 0; i < overlays.Count; i++)
 				{
-					noError = RefreshOverlay(overlays[i]);
+					noError = RefreshOverlay(overlays[i], refreshTopmost);
 					if (!noError)
 					{
 						//application is exiting
@@ -416,17 +427,20 @@ namespace NegativeScreen
 		/// return true on success, false on failure.
 		/// </summary>
 		/// <returns></returns>
-                private bool RefreshOverlay(NegativeOverlay overlay)
+                private bool RefreshOverlay(NegativeOverlay overlay, bool refreshTopmost)
                 {
                         try
                         {
-                                overlay.UpdateBounds();
-                                // Reclaim topmost status.
-                                if (!NativeMethods.SetWindowPos(overlay.Handle, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
-                           (int)SetWindowPosFlags.SWP_NOACTIVATE | (int)SetWindowPosFlags.SWP_NOMOVE | (int)SetWindowPosFlags.SWP_NOSIZE))
+                                bool boundsChanged = overlay.UpdateBounds();
+                                if (refreshTopmost || boundsChanged)
                                 {
+                                        // Reclaim topmost status.
+                                        if (!NativeMethods.SetWindowPos(overlay.Handle, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
+                           (int)SetWindowPosFlags.SWP_NOACTIVATE | (int)SetWindowPosFlags.SWP_NOMOVE | (int)SetWindowPosFlags.SWP_NOSIZE))
+                                        {
 					throw new Exception("SetWindowPos()", Marshal.GetExceptionForHR(Marshal.GetHRForLastWin32Error()));
 				}
+                                }
 				// Force redraw.
 				if (!NativeMethods.InvalidateRect(overlay.HwndMag, IntPtr.Zero, true))
 				{

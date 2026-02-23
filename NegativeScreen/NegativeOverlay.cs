@@ -117,7 +117,7 @@ namespace NegativeScreen
             this.Show();
         }
 
-        public void UpdateBounds()
+        public bool UpdateBounds()
         {
             if (trackWindow)
             {
@@ -125,16 +125,20 @@ namespace NegativeScreen
                 if (NativeMethods.GetWindowRect(targetWindow, out rect))
                 {
                     Rectangle b = new Rectangle(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+                    bool changed = false;
                     if (this.Bounds != b)
                     {
                         this.Location = b.Location;
                         this.Size = b.Size;
                         NativeMethods.SetWindowPos(this.hwndMag, IntPtr.Zero, 0, 0, b.Width, b.Height,
                             (int)SetWindowPosFlags.SWP_NOACTIVATE | (int)SetWindowPosFlags.SWP_NOZORDER);
+                        changed = true;
                     }
                     NativeMethods.MagSetWindowSource(this.hwndMag, rect);
+                    return changed;
                 }
             }
+            return false;
         }
 
         private static Rectangle GetWindowRectangle(IntPtr hwnd)
