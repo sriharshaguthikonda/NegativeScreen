@@ -105,7 +105,7 @@ namespace NegativeScreen
                 }
             };
 
-            normalizeCursorScheme.Text = "Normalize cursor colors while forcing software cursor";
+            normalizeCursorScheme.Text = "Force Windows Black cursor scheme while software cursor is enabled";
             normalizeCursorScheme.Dock = DockStyle.Bottom;
             normalizeCursorScheme.Checked = current.NormalizeCursorScheme;
             normalizeCursorScheme.Enabled = softwareCursor.Checked;

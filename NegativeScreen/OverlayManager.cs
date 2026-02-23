@@ -591,7 +591,10 @@ namespace NegativeScreen
                         {
                                 savedCursorValues = LoadCurrentCursorValues();
                         }
-                        ApplyCursorScheme("Windows Default");
+                        if (!ApplyCursorScheme("Windows Black"))
+                        {
+                                ApplyCursorScheme("Windows Black (system scheme)");
+                        }
                 }
 
                 private void RestoreCursorSchemeSetting()
@@ -644,7 +647,7 @@ namespace NegativeScreen
                         return values;
                 }
 
-                private void ApplyCursorScheme(string schemeName)
+                private bool ApplyCursorScheme(string schemeName)
                 {
                         try
                         {
@@ -652,10 +655,10 @@ namespace NegativeScreen
                                 using (RegistryKey cursors = Registry.CurrentUser.OpenSubKey("Control Panel\\Cursors", true))
                                 {
                                         if (schemes == null || cursors == null)
-                                                return;
+                                                return false;
                                         string scheme = schemes.GetValue(schemeName, "") as string;
                                         if (string.IsNullOrEmpty(scheme))
-                                                return;
+                                                return false;
                                         string[] parts = scheme.Split(new[] { ',' }, StringSplitOptions.None);
                                         string[] names = CursorValueNames();
                                         int count = Math.Min(parts.Length, names.Length);
@@ -667,11 +670,13 @@ namespace NegativeScreen
                                 uint dummy = 0;
                                 NativeMethods.SystemParametersInfo((uint)SystemParametersInfoAction.SPI_SETCURSORS, 0, ref dummy,
                                         (uint)SystemParametersInfoFlags.SPIF_UPDATEINIFILE | (uint)SystemParametersInfoFlags.SPIF_SENDCHANGE);
+                                return true;
                         }
                         catch
                         {
                                 // best-effort apply
                         }
+                        return false;
                 }
 
                 private string[] CursorValueNames()
