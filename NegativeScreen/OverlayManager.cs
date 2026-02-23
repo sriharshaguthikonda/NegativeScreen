@@ -79,20 +79,23 @@ namespace NegativeScreen
         private bool forceSoftwareCursor;
         private bool normalizeCursorScheme;
         private Dictionary<string, string> savedCursorValues;
+        private bool useCustomCursorOverlay;
+        private CursorOverlay cursorOverlay;
         private bool EffectiveMagnifiedCursor
         {
-                get { return useMagnifiedCursor && !forceSoftwareCursor; }
+                get { return useMagnifiedCursor && !forceSoftwareCursor && !useCustomCursorOverlay; }
         }
         private uint savedMouseTrails;
         private bool hasSavedMouseTrails;
 
-                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor, bool forceSoftwareCursor, bool normalizeCursorScheme)
+                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor, bool forceSoftwareCursor, bool normalizeCursorScheme, bool useCustomCursorOverlay)
                 {
                         this.selectedMonitors = new List<string>(monitors);
                         this.selectedWindows = new List<string>(windows);
                         this.useMagnifiedCursor = useMagnifiedCursor;
                         this.forceSoftwareCursor = forceSoftwareCursor;
                         this.normalizeCursorScheme = normalizeCursorScheme;
+                        this.useCustomCursorOverlay = useCustomCursorOverlay;
                         this.lastTopmostRefreshTick = Environment.TickCount;
 
                         contextMenu = new System.Windows.Forms.ContextMenuStrip();
@@ -126,6 +129,7 @@ namespace NegativeScreen
                                                         this.useMagnifiedCursor = form.Result.UseMagnifiedCursor;
                                                         this.forceSoftwareCursor = form.Result.ForceSoftwareCursor;
                                                         this.normalizeCursorScheme = form.Result.NormalizeCursorScheme;
+                                                        this.useCustomCursorOverlay = form.Result.UseCustomCursorOverlay;
                                                         Settings.Save(form.Result);
                                                         foreach (ToolStripItem item in this.contextMenu.Items)
                                                         {
@@ -135,6 +139,7 @@ namespace NegativeScreen
                                                         }
                                                         ApplySoftwareCursorSetting();
                                                         ApplyCursorSchemeSetting();
+                                                        ApplyCustomCursorOverlaySetting();
                                                         Initialization();
                                                 }
                                         }
@@ -239,6 +244,7 @@ namespace NegativeScreen
 
                         ApplySoftwareCursorSetting();
                         ApplyCursorSchemeSetting();
+                        ApplyCustomCursorOverlaySetting();
 
 			Initialization();
 		}
@@ -523,6 +529,13 @@ namespace NegativeScreen
                         if (!overlaysVisible || overlays.Count == 0)
                         {
                                 ShowSystemCursor();
+                                StopCustomCursorOverlay();
+                                return;
+                        }
+                        if (useCustomCursorOverlay)
+                        {
+                                HideSystemCursor();
+                                StartCustomCursorOverlay();
                                 return;
                         }
                         if (useMagnifiedCursor)
@@ -551,7 +564,7 @@ namespace NegativeScreen
 
                 private void ApplySoftwareCursorSetting()
                 {
-                        if (!forceSoftwareCursor)
+                        if (!forceSoftwareCursor || useCustomCursorOverlay)
                         {
                                 RestoreSoftwareCursorSetting();
                                 return;
@@ -582,7 +595,7 @@ namespace NegativeScreen
 
                 private void ApplyCursorSchemeSetting()
                 {
-                        if (!forceSoftwareCursor || !normalizeCursorScheme)
+                        if (!forceSoftwareCursor || !normalizeCursorScheme || useCustomCursorOverlay)
                         {
                                 RestoreCursorSchemeSetting();
                                 return;
@@ -619,6 +632,35 @@ namespace NegativeScreen
                                 // best-effort restore
                         }
                         savedCursorValues = null;
+                }
+
+                private void ApplyCustomCursorOverlaySetting()
+                {
+                        if (!useCustomCursorOverlay)
+                        {
+                                StopCustomCursorOverlay();
+                                return;
+                        }
+                        if (cursorOverlay == null || cursorOverlay.IsDisposed)
+                        {
+                                cursorOverlay = new CursorOverlay();
+                        }
+                        StartCustomCursorOverlay();
+                }
+
+                private void StartCustomCursorOverlay()
+                {
+                        if (cursorOverlay == null || cursorOverlay.IsDisposed)
+                                return;
+                        if (!cursorOverlay.Visible)
+                                cursorOverlay.Start();
+                }
+
+                private void StopCustomCursorOverlay()
+                {
+                        if (cursorOverlay == null || cursorOverlay.IsDisposed)
+                                return;
+                        cursorOverlay.Stop();
                 }
 
                 private Dictionary<string, string> LoadCurrentCursorValues()
@@ -794,6 +836,7 @@ namespace NegativeScreen
 				return;
 			isShuttingDown = true;
 			mainLoopPaused = false;
+			StopCustomCursorOverlay();
 			RestoreSoftwareCursorSetting();
 			RestoreCursorSchemeSetting();
 			try
@@ -849,6 +892,12 @@ namespace NegativeScreen
                                 ov.Dispose();
                         overlays.Clear();
                         UpdateCursorVisibility(false);
+                        StopCustomCursorOverlay();
+                        if (cursorOverlay != null)
+                        {
+                                cursorOverlay.Dispose();
+                                cursorOverlay = null;
+                        }
                         RestoreSoftwareCursorSetting();
                         RestoreCursorSchemeSetting();
                         NativeMethods.MagUninitialize();

@@ -20,6 +20,7 @@ namespace NegativeScreen
         private CheckBox magnifiedCursor = new CheckBox();
         private CheckBox softwareCursor = new CheckBox();
         private CheckBox normalizeCursorScheme = new CheckBox();
+        private CheckBox customCursorOverlay = new CheckBox();
         private Button renameButton = new Button();
 
         private Dictionary<string, string> aliases = new Dictionary<string, string>();
@@ -97,11 +98,14 @@ namespace NegativeScreen
                     magnifiedCursor.Checked = false;
                     magnifiedCursor.Enabled = false;
                     normalizeCursorScheme.Enabled = true;
+                    customCursorOverlay.Checked = false;
+                    customCursorOverlay.Enabled = false;
                 }
                 else
                 {
                     magnifiedCursor.Enabled = true;
                     normalizeCursorScheme.Enabled = false;
+                    customCursorOverlay.Enabled = true;
                 }
             };
 
@@ -109,6 +113,27 @@ namespace NegativeScreen
             normalizeCursorScheme.Dock = DockStyle.Bottom;
             normalizeCursorScheme.Checked = current.NormalizeCursorScheme;
             normalizeCursorScheme.Enabled = softwareCursor.Checked;
+
+            customCursorOverlay.Text = "Use custom cursor overlay (high contrast)";
+            customCursorOverlay.Dock = DockStyle.Bottom;
+            customCursorOverlay.Checked = current.UseCustomCursorOverlay;
+            customCursorOverlay.CheckedChanged += (s, e) =>
+            {
+                if (customCursorOverlay.Checked)
+                {
+                    magnifiedCursor.Checked = false;
+                    magnifiedCursor.Enabled = false;
+                    softwareCursor.Checked = false;
+                    softwareCursor.Enabled = false;
+                    normalizeCursorScheme.Enabled = false;
+                }
+                else
+                {
+                    magnifiedCursor.Enabled = true;
+                    softwareCursor.Enabled = true;
+                    normalizeCursorScheme.Enabled = softwareCursor.Checked;
+                }
+            };
 
             darkMode.Text = "Dark mode";
             darkMode.Dock = DockStyle.Bottom;
@@ -120,6 +145,14 @@ namespace NegativeScreen
                 magnifiedCursor.Checked = false;
                 magnifiedCursor.Enabled = false;
             }
+            if (customCursorOverlay.Checked)
+            {
+                magnifiedCursor.Checked = false;
+                magnifiedCursor.Enabled = false;
+                softwareCursor.Checked = false;
+                softwareCursor.Enabled = false;
+                normalizeCursorScheme.Enabled = false;
+            }
 
             this.Controls.Add(tabs);
             this.Controls.Add(applyButton);
@@ -128,6 +161,7 @@ namespace NegativeScreen
             this.Controls.Add(magnifiedCursor);
             this.Controls.Add(softwareCursor);
             this.Controls.Add(normalizeCursorScheme);
+            this.Controls.Add(customCursorOverlay);
             this.Controls.Add(darkMode);
 
             this.AcceptButton = applyButton;
@@ -220,6 +254,7 @@ namespace NegativeScreen
             cfg.UseMagnifiedCursor = magnifiedCursor.Checked;
             cfg.ForceSoftwareCursor = softwareCursor.Checked;
             cfg.NormalizeCursorScheme = normalizeCursorScheme.Checked;
+            cfg.UseCustomCursorOverlay = customCursorOverlay.Checked;
             Result = cfg;
         }
 

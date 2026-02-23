@@ -17,6 +17,7 @@ namespace NegativeScreen
         public bool UseMagnifiedCursor = true;
         public bool ForceSoftwareCursor = false;
         public bool NormalizeCursorScheme = true;
+        public bool UseCustomCursorOverlay = false;
         public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
     }
 
@@ -38,6 +39,7 @@ namespace NegativeScreen
             bool hasCursorSetting = false;
             bool hasSoftwareCursorSetting = false;
             bool hasNormalizeCursorSchemeSetting = false;
+            bool hasCustomCursorOverlaySetting = false;
             if (File.Exists(ConfigPath))
             {
                 try
@@ -48,12 +50,14 @@ namespace NegativeScreen
                         hasCursorSetting = xml.IndexOf("<UseMagnifiedCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasSoftwareCursorSetting = xml.IndexOf("<ForceSoftwareCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasNormalizeCursorSchemeSetting = xml.IndexOf("<NormalizeCursorScheme>", StringComparison.OrdinalIgnoreCase) >= 0;
+                        hasCustomCursorOverlaySetting = xml.IndexOf("<UseCustomCursorOverlay>", StringComparison.OrdinalIgnoreCase) >= 0;
                     }
                     catch
                     {
                         hasCursorSetting = false;
                         hasSoftwareCursorSetting = false;
                         hasNormalizeCursorSchemeSetting = false;
+                        hasCustomCursorOverlaySetting = false;
                     }
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
@@ -70,6 +74,7 @@ namespace NegativeScreen
                 cfg.UseMagnifiedCursor = true;
                 cfg.ForceSoftwareCursor = false;
                 cfg.NormalizeCursorScheme = true;
+                cfg.UseCustomCursorOverlay = false;
             }
             else if (!hasCursorSetting)
             {
@@ -83,6 +88,10 @@ namespace NegativeScreen
             if (!hasNormalizeCursorSchemeSetting)
             {
                 cfg.NormalizeCursorScheme = true;
+            }
+            if (!hasCustomCursorOverlaySetting)
+            {
+                cfg.UseCustomCursorOverlay = false;
             }
 
             // Only add all monitors if this is a new config

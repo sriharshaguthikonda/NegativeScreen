@@ -36,6 +36,7 @@ Settings window temporarily hides overlays so it stays visible on inverted monit
 Exiting the application now cleans up all overlays and system event hooks so no stray processes remain.
 Optional "Force software cursor (minimal trails)" setting can help reduce mouse lag on some systems.
 Optional "Normalize cursor colors while forcing software cursor" can improve cursor visibility on inverted monitors.
+Optional "Use custom cursor overlay (high contrast)" draws a software cursor independent of system schemes.
 
 
 Windows Aero must be enabled, or the program won't start.
