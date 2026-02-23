@@ -849,6 +849,18 @@ namespace NegativeScreen
 
 	}
 
+	internal enum SystemParametersInfoAction : uint
+	{
+		SPI_GETMOUSETRAILS = 0x005E,
+		SPI_SETMOUSETRAILS = 0x005D
+	}
+
+	internal enum SystemParametersInfoFlags : uint
+	{
+		SPIF_UPDATEINIFILE = 0x0001,
+		SPIF_SENDCHANGE = 0x0002
+	}
+
 	/// <summary>
 	/// The keys that must be pressed in combination with the key specified by the uVirtKey parameter in order to generate the WM_HOTKEY message.
 	/// The fsModifiers parameter can be a combination of the following values.

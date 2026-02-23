@@ -164,6 +164,10 @@ namespace NegativeScreen
 		[DllImport("user32.dll")]
 		public static extern bool SetProcessDPIAware();
 
+		[DllImport("user32.dll", SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, ref uint pvParam, uint fWinIni);
+
 		/// <summary>
 		/// Undocumented function.
 		/// </summary>

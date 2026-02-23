@@ -75,12 +75,16 @@ namespace NegativeScreen
         private EventHandler displaySettingsHandler;
         private bool useMagnifiedCursor;
         private bool isCursorHidden;
+        private bool forceSoftwareCursor;
+        private uint savedMouseTrails;
+        private bool hasSavedMouseTrails;
 
-                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor)
+                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor, bool forceSoftwareCursor)
                 {
                         this.selectedMonitors = new List<string>(monitors);
                         this.selectedWindows = new List<string>(windows);
                         this.useMagnifiedCursor = useMagnifiedCursor;
+                        this.forceSoftwareCursor = forceSoftwareCursor;
                         this.lastTopmostRefreshTick = Environment.TickCount;
 
                         contextMenu = new System.Windows.Forms.ContextMenuStrip();
@@ -112,6 +116,7 @@ namespace NegativeScreen
                                                         this.selectedMonitors = form.Result.Monitors;
                                                         this.selectedWindows = form.Result.Windows;
                                                         this.useMagnifiedCursor = form.Result.UseMagnifiedCursor;
+                                                        this.forceSoftwareCursor = form.Result.ForceSoftwareCursor;
                                                         Settings.Save(form.Result);
                                                         foreach (ToolStripItem item in this.contextMenu.Items)
                                                         {
@@ -119,6 +124,7 @@ namespace NegativeScreen
                                                                 if (mi != null && mi.Tag != null)
                                                                         mi.Checked = this.selectedMonitors.Contains(mi.Tag.ToString());
                                                         }
+                                                        ApplySoftwareCursorSetting();
                                                         Initialization();
                                                 }
                                         }
@@ -220,6 +226,8 @@ namespace NegativeScreen
 
                         displaySettingsHandler = new EventHandler(SystemEvents_DisplaySettingsChanged);
                         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += displaySettingsHandler;
+
+                        ApplySoftwareCursorSetting();
 
 			Initialization();
 		}
@@ -528,6 +536,37 @@ namespace NegativeScreen
                         isCursorHidden = false;
                 }
 
+                private void ApplySoftwareCursorSetting()
+                {
+                        if (!forceSoftwareCursor)
+                        {
+                                RestoreSoftwareCursorSetting();
+                                return;
+                        }
+                        if (!hasSavedMouseTrails)
+                        {
+                                uint value = 0;
+                                if (NativeMethods.SystemParametersInfo((uint)SystemParametersInfoAction.SPI_GETMOUSETRAILS, 0, ref value, 0))
+                                {
+                                        savedMouseTrails = value;
+                                        hasSavedMouseTrails = true;
+                                }
+                        }
+                        uint trails = 2;
+                        NativeMethods.SystemParametersInfo((uint)SystemParametersInfoAction.SPI_SETMOUSETRAILS, trails, ref trails,
+                                (uint)SystemParametersInfoFlags.SPIF_UPDATEINIFILE | (uint)SystemParametersInfoFlags.SPIF_SENDCHANGE);
+                }
+
+                private void RestoreSoftwareCursorSetting()
+                {
+                        if (!hasSavedMouseTrails)
+                                return;
+                        uint trails = savedMouseTrails;
+                        NativeMethods.SystemParametersInfo((uint)SystemParametersInfoAction.SPI_SETMOUSETRAILS, trails, ref trails,
+                                (uint)SystemParametersInfoFlags.SPIF_UPDATEINIFILE | (uint)SystemParametersInfoFlags.SPIF_SENDCHANGE);
+                        hasSavedMouseTrails = false;
+                }
+
 		private bool IsCursorOnOverlay()
 		{
 			if (overlays.Count == 0)
@@ -626,6 +665,7 @@ namespace NegativeScreen
 				return;
 			isShuttingDown = true;
 			mainLoopPaused = false;
+			RestoreSoftwareCursorSetting();
 			try
 			{
 				SetOverlaysVisible(false);
@@ -679,6 +719,7 @@ namespace NegativeScreen
                                 ov.Dispose();
                         overlays.Clear();
                         UpdateCursorVisibility(false);
+                        RestoreSoftwareCursorSetting();
                         NativeMethods.MagUninitialize();
                         base.Dispose(disposing);
                 }
