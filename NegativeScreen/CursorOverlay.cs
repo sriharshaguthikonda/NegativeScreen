@@ -6,7 +6,7 @@ namespace NegativeScreen
 {
     internal class CursorOverlay : Form
     {
-        private const int OverlaySize = 48;
+        private const int MinOverlaySize = 24;
         private readonly Timer timer;
         private Point lastLocation = new Point(int.MinValue, int.MinValue);
 
@@ -18,7 +18,7 @@ namespace NegativeScreen
             this.TopMost = true;
             this.BackColor = Color.Magenta;
             this.TransparencyKey = Color.Magenta;
-            this.Size = new Size(OverlaySize, OverlaySize);
+            this.Size = new Size(MinOverlaySize, MinOverlaySize);
             this.DoubleBuffered = true;
 
             timer = new Timer();
@@ -69,8 +69,19 @@ namespace NegativeScreen
 
         private void UpdatePosition()
         {
+            Cursor cursor = Cursor.Current ?? Cursors.Arrow;
+            Size size = cursor.Size;
+            if (size.Width < MinOverlaySize || size.Height < MinOverlaySize)
+            {
+                size = new Size(Math.Max(size.Width, MinOverlaySize), Math.Max(size.Height, MinOverlaySize));
+            }
+            if (this.Size != size)
+            {
+                this.Size = size;
+            }
+            Point hotSpot = cursor.HotSpot;
             Point pos = Cursor.Position;
-            Point newLocation = new Point(pos.X - OverlaySize / 2, pos.Y - OverlaySize / 2);
+            Point newLocation = new Point(pos.X - hotSpot.X, pos.Y - hotSpot.Y);
             if (newLocation != lastLocation)
             {
                 this.Location = newLocation;
@@ -85,7 +96,7 @@ namespace NegativeScreen
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             Cursor cursor = Cursor.Current ?? Cursors.Arrow;
-            Rectangle bounds = new Rectangle(0, 0, OverlaySize, OverlaySize);
+            Rectangle bounds = new Rectangle(0, 0, this.Width, this.Height);
             cursor.Draw(e.Graphics, bounds);
         }
     }

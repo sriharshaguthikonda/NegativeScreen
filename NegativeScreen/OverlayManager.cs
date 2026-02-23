@@ -551,6 +551,9 @@ namespace NegativeScreen
                         if (isCursorHidden)
                                 return;
                         Cursor.Hide();
+                        for (int i = 0; i < 5 && NativeMethods.ShowCursor(false) >= 0; i++)
+                        {
+                        }
                         isCursorHidden = true;
                 }
 
@@ -559,6 +562,9 @@ namespace NegativeScreen
                         if (!isCursorHidden)
                                 return;
                         Cursor.Show();
+                        for (int i = 0; i < 5 && NativeMethods.ShowCursor(true) < 0; i++)
+                        {
+                        }
                         isCursorHidden = false;
                 }
 
