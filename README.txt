@@ -35,6 +35,7 @@ Tray icon and settings list displays monitor indices for easier identification.
 Settings window temporarily hides overlays so it stays visible on inverted monitors.
 Exiting the application now cleans up all overlays and system event hooks so no stray processes remain.
 Optional "Force software cursor (minimal trails)" setting can help reduce mouse lag on some systems.
+Optional "Normalize cursor colors while forcing software cursor" can improve cursor visibility on inverted monitors.
 
 
 Windows Aero must be enabled, or the program won't start.

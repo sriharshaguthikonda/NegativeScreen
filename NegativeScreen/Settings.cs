@@ -16,6 +16,7 @@ namespace NegativeScreen
         public bool DarkMode = true;
         public bool UseMagnifiedCursor = true;
         public bool ForceSoftwareCursor = false;
+        public bool NormalizeCursorScheme = true;
         public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
     }
 
@@ -36,6 +37,7 @@ namespace NegativeScreen
             Config cfg = null;
             bool hasCursorSetting = false;
             bool hasSoftwareCursorSetting = false;
+            bool hasNormalizeCursorSchemeSetting = false;
             if (File.Exists(ConfigPath))
             {
                 try
@@ -45,11 +47,13 @@ namespace NegativeScreen
                         string xml = File.ReadAllText(ConfigPath);
                         hasCursorSetting = xml.IndexOf("<UseMagnifiedCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasSoftwareCursorSetting = xml.IndexOf("<ForceSoftwareCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
+                        hasNormalizeCursorSchemeSetting = xml.IndexOf("<NormalizeCursorScheme>", StringComparison.OrdinalIgnoreCase) >= 0;
                     }
                     catch
                     {
                         hasCursorSetting = false;
                         hasSoftwareCursorSetting = false;
+                        hasNormalizeCursorSchemeSetting = false;
                     }
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
@@ -65,6 +69,7 @@ namespace NegativeScreen
                 cfg.DarkMode = true;
                 cfg.UseMagnifiedCursor = true;
                 cfg.ForceSoftwareCursor = false;
+                cfg.NormalizeCursorScheme = true;
             }
             else if (!hasCursorSetting)
             {
@@ -74,6 +79,10 @@ namespace NegativeScreen
             if (!hasSoftwareCursorSetting)
             {
                 cfg.ForceSoftwareCursor = false;
+            }
+            if (!hasNormalizeCursorSchemeSetting)
+            {
+                cfg.NormalizeCursorScheme = true;
             }
 
             // Only add all monitors if this is a new config

@@ -852,7 +852,8 @@ namespace NegativeScreen
 	internal enum SystemParametersInfoAction : uint
 	{
 		SPI_GETMOUSETRAILS = 0x005E,
-		SPI_SETMOUSETRAILS = 0x005D
+		SPI_SETMOUSETRAILS = 0x005D,
+		SPI_SETCURSORS = 0x0057
 	}
 
 	internal enum SystemParametersInfoFlags : uint

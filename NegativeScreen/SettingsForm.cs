@@ -19,6 +19,7 @@ namespace NegativeScreen
         private CheckBox darkMode = new CheckBox();
         private CheckBox magnifiedCursor = new CheckBox();
         private CheckBox softwareCursor = new CheckBox();
+        private CheckBox normalizeCursorScheme = new CheckBox();
         private Button renameButton = new Button();
 
         private Dictionary<string, string> aliases = new Dictionary<string, string>();
@@ -95,12 +96,19 @@ namespace NegativeScreen
                 {
                     magnifiedCursor.Checked = false;
                     magnifiedCursor.Enabled = false;
+                    normalizeCursorScheme.Enabled = true;
                 }
                 else
                 {
                     magnifiedCursor.Enabled = true;
+                    normalizeCursorScheme.Enabled = false;
                 }
             };
+
+            normalizeCursorScheme.Text = "Normalize cursor colors while forcing software cursor";
+            normalizeCursorScheme.Dock = DockStyle.Bottom;
+            normalizeCursorScheme.Checked = current.NormalizeCursorScheme;
+            normalizeCursorScheme.Enabled = softwareCursor.Checked;
 
             darkMode.Text = "Dark mode";
             darkMode.Dock = DockStyle.Bottom;
@@ -119,6 +127,7 @@ namespace NegativeScreen
             this.Controls.Add(startMinimized);
             this.Controls.Add(magnifiedCursor);
             this.Controls.Add(softwareCursor);
+            this.Controls.Add(normalizeCursorScheme);
             this.Controls.Add(darkMode);
 
             this.AcceptButton = applyButton;
@@ -210,6 +219,7 @@ namespace NegativeScreen
             cfg.DarkMode = darkMode.Checked;
             cfg.UseMagnifiedCursor = magnifiedCursor.Checked;
             cfg.ForceSoftwareCursor = softwareCursor.Checked;
+            cfg.NormalizeCursorScheme = normalizeCursorScheme.Checked;
             Result = cfg;
         }
 

@@ -24,6 +24,7 @@ using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.Win32;
 
 namespace NegativeScreen
 {
@@ -76,6 +77,8 @@ namespace NegativeScreen
         private bool useMagnifiedCursor;
         private bool isCursorHidden;
         private bool forceSoftwareCursor;
+        private bool normalizeCursorScheme;
+        private Dictionary<string, string> savedCursorValues;
         private bool EffectiveMagnifiedCursor
         {
                 get { return useMagnifiedCursor && !forceSoftwareCursor; }
@@ -83,12 +86,13 @@ namespace NegativeScreen
         private uint savedMouseTrails;
         private bool hasSavedMouseTrails;
 
-                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor, bool forceSoftwareCursor)
+                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor, bool forceSoftwareCursor, bool normalizeCursorScheme)
                 {
                         this.selectedMonitors = new List<string>(monitors);
                         this.selectedWindows = new List<string>(windows);
                         this.useMagnifiedCursor = useMagnifiedCursor;
                         this.forceSoftwareCursor = forceSoftwareCursor;
+                        this.normalizeCursorScheme = normalizeCursorScheme;
                         this.lastTopmostRefreshTick = Environment.TickCount;
 
                         contextMenu = new System.Windows.Forms.ContextMenuStrip();
@@ -121,6 +125,7 @@ namespace NegativeScreen
                                                         this.selectedWindows = form.Result.Windows;
                                                         this.useMagnifiedCursor = form.Result.UseMagnifiedCursor;
                                                         this.forceSoftwareCursor = form.Result.ForceSoftwareCursor;
+                                                        this.normalizeCursorScheme = form.Result.NormalizeCursorScheme;
                                                         Settings.Save(form.Result);
                                                         foreach (ToolStripItem item in this.contextMenu.Items)
                                                         {
@@ -129,6 +134,7 @@ namespace NegativeScreen
                                                                         mi.Checked = this.selectedMonitors.Contains(mi.Tag.ToString());
                                                         }
                                                         ApplySoftwareCursorSetting();
+                                                        ApplyCursorSchemeSetting();
                                                         Initialization();
                                                 }
                                         }
@@ -232,6 +238,7 @@ namespace NegativeScreen
                         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += displaySettingsHandler;
 
                         ApplySoftwareCursorSetting();
+                        ApplyCursorSchemeSetting();
 
 			Initialization();
 		}
@@ -573,6 +580,122 @@ namespace NegativeScreen
                         hasSavedMouseTrails = false;
                 }
 
+                private void ApplyCursorSchemeSetting()
+                {
+                        if (!forceSoftwareCursor || !normalizeCursorScheme)
+                        {
+                                RestoreCursorSchemeSetting();
+                                return;
+                        }
+                        if (savedCursorValues == null)
+                        {
+                                savedCursorValues = LoadCurrentCursorValues();
+                        }
+                        ApplyCursorScheme("Windows Default");
+                }
+
+                private void RestoreCursorSchemeSetting()
+                {
+                        if (savedCursorValues == null)
+                                return;
+                        try
+                        {
+                                using (RegistryKey cursors = Registry.CurrentUser.OpenSubKey("Control Panel\\Cursors", true))
+                                {
+                                        if (cursors != null)
+                                        {
+                                                foreach (var kvp in savedCursorValues)
+                                                {
+                                                        cursors.SetValue(kvp.Key, kvp.Value, RegistryValueKind.String);
+                                                }
+                                        }
+                                }
+                                uint dummy = 0;
+                                NativeMethods.SystemParametersInfo((uint)SystemParametersInfoAction.SPI_SETCURSORS, 0, ref dummy,
+                                        (uint)SystemParametersInfoFlags.SPIF_UPDATEINIFILE | (uint)SystemParametersInfoFlags.SPIF_SENDCHANGE);
+                        }
+                        catch
+                        {
+                                // best-effort restore
+                        }
+                        savedCursorValues = null;
+                }
+
+                private Dictionary<string, string> LoadCurrentCursorValues()
+                {
+                        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        try
+                        {
+                                using (RegistryKey cursors = Registry.CurrentUser.OpenSubKey("Control Panel\\Cursors", false))
+                                {
+                                        if (cursors != null)
+                                        {
+                                                foreach (string name in CursorValueNames())
+                                                {
+                                                        string value = cursors.GetValue(name, "") as string;
+                                                        values[name] = value ?? "";
+                                                }
+                                        }
+                                }
+                        }
+                        catch
+                        {
+                        }
+                        return values;
+                }
+
+                private void ApplyCursorScheme(string schemeName)
+                {
+                        try
+                        {
+                                using (RegistryKey schemes = Registry.CurrentUser.OpenSubKey("Control Panel\\Cursors\\Schemes", false))
+                                using (RegistryKey cursors = Registry.CurrentUser.OpenSubKey("Control Panel\\Cursors", true))
+                                {
+                                        if (schemes == null || cursors == null)
+                                                return;
+                                        string scheme = schemes.GetValue(schemeName, "") as string;
+                                        if (string.IsNullOrEmpty(scheme))
+                                                return;
+                                        string[] parts = scheme.Split(new[] { ',' }, StringSplitOptions.None);
+                                        string[] names = CursorValueNames();
+                                        int count = Math.Min(parts.Length, names.Length);
+                                        for (int i = 0; i < count; i++)
+                                        {
+                                                cursors.SetValue(names[i], parts[i], RegistryValueKind.String);
+                                        }
+                                }
+                                uint dummy = 0;
+                                NativeMethods.SystemParametersInfo((uint)SystemParametersInfoAction.SPI_SETCURSORS, 0, ref dummy,
+                                        (uint)SystemParametersInfoFlags.SPIF_UPDATEINIFILE | (uint)SystemParametersInfoFlags.SPIF_SENDCHANGE);
+                        }
+                        catch
+                        {
+                                // best-effort apply
+                        }
+                }
+
+                private string[] CursorValueNames()
+                {
+                        return new[]
+                        {
+                                "Arrow",
+                                "Help",
+                                "AppStarting",
+                                "Wait",
+                                "Crosshair",
+                                "IBeam",
+                                "NWPen",
+                                "No",
+                                "SizeNS",
+                                "SizeWE",
+                                "SizeNWSE",
+                                "SizeNESW",
+                                "SizeAll",
+                                "UpArrow",
+                                "Hand"
+                        };
+                }
+
 		private bool IsCursorOnOverlay()
 		{
 			if (overlays.Count == 0)
@@ -672,6 +795,7 @@ namespace NegativeScreen
 			isShuttingDown = true;
 			mainLoopPaused = false;
 			RestoreSoftwareCursorSetting();
+			RestoreCursorSchemeSetting();
 			try
 			{
 				SetOverlaysVisible(false);
@@ -726,6 +850,7 @@ namespace NegativeScreen
                         overlays.Clear();
                         UpdateCursorVisibility(false);
                         RestoreSoftwareCursorSetting();
+                        RestoreCursorSchemeSetting();
                         NativeMethods.MagUninitialize();
                         base.Dispose(disposing);
                 }
