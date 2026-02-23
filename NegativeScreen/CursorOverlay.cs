@@ -6,7 +6,7 @@ namespace NegativeScreen
 {
     internal class CursorOverlay : Form
     {
-        private const int OverlaySize = 32;
+        private const int OverlaySize = 48;
         private readonly Timer timer;
         private Point lastLocation = new Point(int.MinValue, int.MinValue);
 
@@ -84,21 +84,9 @@ namespace NegativeScreen
             base.OnPaint(e);
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            int center = OverlaySize / 2;
-            int radius = 10;
-            Rectangle circle = new Rectangle(center - radius, center - radius, radius * 2, radius * 2);
-
-            using (Pen white = new Pen(Color.White, 2))
-            using (Pen black = new Pen(Color.Black, 1))
-            {
-                e.Graphics.DrawEllipse(white, circle);
-                e.Graphics.DrawEllipse(black, circle);
-
-                e.Graphics.DrawLine(white, center - 12, center, center + 12, center);
-                e.Graphics.DrawLine(white, center, center - 12, center, center + 12);
-                e.Graphics.DrawLine(black, center - 10, center, center + 10, center);
-                e.Graphics.DrawLine(black, center, center - 10, center, center + 10);
-            }
+            Cursor cursor = Cursor.Current ?? Cursors.Arrow;
+            Rectangle bounds = new Rectangle(0, 0, OverlaySize, OverlaySize);
+            cursor.Draw(e.Graphics, bounds);
         }
     }
 }
