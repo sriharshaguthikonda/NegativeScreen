@@ -51,6 +51,7 @@ namespace NegativeScreen
 
 		private const int DEFAULT_INCREASE_STEP = 10;
 		private const int DEFAULT_SLEEP_TIME = 16;
+		private const int BACKGROUND_SLEEP_TIME = 50;
 		private const int TOPMOST_REFRESH_INTERVAL_MS = 250;
 		private const int PAUSE_SLEEP_TIME = 100;
 
@@ -401,7 +402,12 @@ namespace NegativeScreen
 
 				if (this.refreshInterval > 0)
 				{
-					System.Threading.Thread.Sleep(this.refreshInterval);
+					int sleepTime = this.refreshInterval;
+					if (!IsCursorOnOverlay())
+					{
+						sleepTime = Math.Max(BACKGROUND_SLEEP_TIME, this.refreshInterval);
+					}
+					System.Threading.Thread.Sleep(sleepTime);
 				}
 
 				//pause
@@ -516,6 +522,19 @@ namespace NegativeScreen
                         Cursor.Show();
                         isCursorHidden = false;
                 }
+
+		private bool IsCursorOnOverlay()
+		{
+			if (overlays.Count == 0)
+				return false;
+			Point pos = Cursor.Position;
+			for (int i = 0; i < overlays.Count; i++)
+			{
+				if (overlays[i].Visible && overlays[i].Bounds.Contains(pos))
+					return true;
+			}
+			return false;
+		}
 
 		protected override void WndProc(ref Message m)
 		{
