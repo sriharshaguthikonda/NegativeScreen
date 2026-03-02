@@ -17,6 +17,12 @@ namespace NegativeScreen
         public bool UseMagnifiedCursor = true;
         public bool ForceSoftwareCursor = false;
         public bool NormalizeCursorScheme = true;
+        public bool AutoInvertByBrightness = false;
+        public int AutoInvertSampleMs = 1000;
+        public double AutoInvertBrightThreshold = 0.65;
+        public double AutoInvertDarkThreshold = 0.45;
+        public int AutoInvertDwellMs = 1000;
+        public bool AutoInvertHideOverlays = true;
         public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
     }
 
@@ -38,6 +44,7 @@ namespace NegativeScreen
             bool hasCursorSetting = false;
             bool hasSoftwareCursorSetting = false;
             bool hasNormalizeCursorSchemeSetting = false;
+            bool hasAutoInvertSetting = false;
             if (File.Exists(ConfigPath))
             {
                 try
@@ -48,12 +55,14 @@ namespace NegativeScreen
                         hasCursorSetting = xml.IndexOf("<UseMagnifiedCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasSoftwareCursorSetting = xml.IndexOf("<ForceSoftwareCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasNormalizeCursorSchemeSetting = xml.IndexOf("<NormalizeCursorScheme>", StringComparison.OrdinalIgnoreCase) >= 0;
+                        hasAutoInvertSetting = xml.IndexOf("<AutoInvertByBrightness>", StringComparison.OrdinalIgnoreCase) >= 0;
                     }
                     catch
                     {
                         hasCursorSetting = false;
                         hasSoftwareCursorSetting = false;
                         hasNormalizeCursorSchemeSetting = false;
+                        hasAutoInvertSetting = false;
                     }
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
@@ -70,6 +79,12 @@ namespace NegativeScreen
                 cfg.UseMagnifiedCursor = true;
                 cfg.ForceSoftwareCursor = false;
                 cfg.NormalizeCursorScheme = true;
+                cfg.AutoInvertByBrightness = false;
+                cfg.AutoInvertSampleMs = 1000;
+                cfg.AutoInvertBrightThreshold = 0.65;
+                cfg.AutoInvertDarkThreshold = 0.45;
+                cfg.AutoInvertDwellMs = 1000;
+                cfg.AutoInvertHideOverlays = true;
             }
             else if (!hasCursorSetting)
             {
@@ -83,6 +98,15 @@ namespace NegativeScreen
             if (!hasNormalizeCursorSchemeSetting)
             {
                 cfg.NormalizeCursorScheme = true;
+            }
+            if (!hasAutoInvertSetting)
+            {
+                cfg.AutoInvertByBrightness = false;
+                cfg.AutoInvertSampleMs = 1000;
+                cfg.AutoInvertBrightThreshold = 0.65;
+                cfg.AutoInvertDarkThreshold = 0.45;
+                cfg.AutoInvertDwellMs = 1000;
+                cfg.AutoInvertHideOverlays = true;
             }
 
             // Only add all monitors if this is a new config

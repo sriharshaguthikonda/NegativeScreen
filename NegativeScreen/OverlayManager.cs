@@ -65,6 +65,8 @@ namespace NegativeScreen
 		private int lastTopmostRefreshTick;
 
 		private List<NegativeOverlay> overlays = new List<NegativeOverlay>();
+                private readonly Dictionary<string, NegativeOverlay> monitorOverlays = new Dictionary<string, NegativeOverlay>(StringComparer.OrdinalIgnoreCase);
+                private AutoInvertManager autoInvertManager;
 
 		private bool resolutionHasChanged = false;
 		private bool isShuttingDown = false;
@@ -252,12 +254,14 @@ namespace NegativeScreen
 
                 private void Initialization()
                 {
+                    StopAutoInvert();
                     // Dispose existing overlays
                     foreach (var item in overlays)
                     {
                         item.Dispose();
                     }
                     overlays = new List<NegativeOverlay>();
+                    monitorOverlays.Clear();
 
                     // Get current monitor configuration
                     var currentScreens = Screen.AllScreens.ToDictionary(s => s.DeviceName, s => s);
@@ -316,7 +320,9 @@ namespace NegativeScreen
                         if (this.selectedMonitors.Contains(screen.DeviceName) || 
                             this.selectedMonitors.Any(m => m == monitorId))
                         {
-                            overlays.Add(new NegativeOverlay(screen, this.EffectiveMagnifiedCursor));
+                            var overlay = new NegativeOverlay(screen, this.EffectiveMagnifiedCursor);
+                            overlays.Add(overlay);
+                            monitorOverlays[screen.DeviceName] = overlay;
                         }
                     }
 
@@ -329,7 +335,32 @@ namespace NegativeScreen
                     }
 
                     UpdateCursorVisibility(true);
+                    StartAutoInvertIfEnabled();
                     RefreshLoop(overlays);
+                }
+
+                private void StartAutoInvertIfEnabled()
+                {
+                    Config cfg = Settings.Load();
+                    if (!cfg.AutoInvertByBrightness)
+                        return;
+                    AutoInvertSettings autoSettings = AutoInvertSettings.FromConfig(cfg);
+                    autoInvertManager = new AutoInvertManager(this, autoSettings, new GdiBrightnessSampler());
+                    autoInvertManager.Start();
+                }
+
+                private void StopAutoInvert()
+                {
+                    if (autoInvertManager == null)
+                        return;
+                    try
+                    {
+                        autoInvertManager.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                    autoInvertManager = null;
                 }
 
                 private void SaveCurrentSelection()
@@ -518,9 +549,87 @@ namespace NegativeScreen
                         UpdateCursorVisibility(visible);
                 }
 
+                internal List<Tuple<NegativeOverlay, bool>> HideOverlaysForAutoInvert()
+                {
+                        if (this.InvokeRequired)
+                        {
+                                return (List<Tuple<NegativeOverlay, bool>>)this.Invoke(new Func<List<Tuple<NegativeOverlay, bool>>>(HideOverlaysForAutoInvert));
+                        }
+                        var snapshot = new List<Tuple<NegativeOverlay, bool>>(overlays.Count);
+                        foreach (var ov in overlays)
+                        {
+                                snapshot.Add(new Tuple<NegativeOverlay, bool>(ov, ov.Visible));
+                        }
+                        foreach (var ov in overlays)
+                        {
+                                ov.Visible = false;
+                        }
+                        ShowSystemCursor();
+                        return snapshot;
+                }
+
+                internal void RestoreOverlaysAfterAutoInvert(List<Tuple<NegativeOverlay, bool>> snapshot)
+                {
+                        if (this.InvokeRequired)
+                        {
+                                this.Invoke(new Action<List<Tuple<NegativeOverlay, bool>>>(RestoreOverlaysAfterAutoInvert), snapshot);
+                                return;
+                        }
+                        if (snapshot != null)
+                        {
+                                foreach (var entry in snapshot)
+                                {
+                                        var ov = entry.Item1;
+                                        if (ov == null || ov.IsDisposed)
+                                                continue;
+                                        ov.Visible = entry.Item2;
+                                }
+                        }
+                        UpdateCursorVisibility(true);
+                }
+
+                internal string[] GetActiveMonitorDeviceNames()
+                {
+                        if (this.InvokeRequired)
+                        {
+                                return (string[])this.Invoke(new Func<string[]>(GetActiveMonitorDeviceNames));
+                        }
+                        return monitorOverlays.Keys.ToArray();
+                }
+
+                internal bool GetMonitorOverlayVisible(string deviceName)
+                {
+                        if (this.InvokeRequired)
+                        {
+                                return (bool)this.Invoke(new Func<string, bool>(GetMonitorOverlayVisible), deviceName);
+                        }
+                        if (string.IsNullOrEmpty(deviceName))
+                                return false;
+                        if (monitorOverlays.TryGetValue(deviceName, out var ov))
+                                return ov.Visible;
+                        return false;
+                }
+
+                internal void SetMonitorOverlayVisible(string deviceName, bool visible)
+                {
+                        if (this.InvokeRequired)
+                        {
+                                this.Invoke(new Action<string, bool>(SetMonitorOverlayVisible), deviceName, visible);
+                                return;
+                        }
+                        if (string.IsNullOrEmpty(deviceName))
+                                return;
+                        if (monitorOverlays.TryGetValue(deviceName, out var ov))
+                        {
+                                ov.Visible = visible;
+                                UpdateCursorVisibility(true);
+                        }
+                }
+
                 private void UpdateCursorVisibility(bool overlaysVisible)
                 {
-                        if (!overlaysVisible || overlays.Count == 0)
+                        bool anyVisible = overlaysVisible && overlays.Any(o => o.Visible);
+                        if (!anyVisible || overlays.Count == 0)
                         {
                                 ShowSystemCursor();
                                 return;
@@ -793,6 +902,7 @@ namespace NegativeScreen
 			if (isShuttingDown)
 				return;
 			isShuttingDown = true;
+                        StopAutoInvert();
 			mainLoopPaused = false;
 			RestoreSoftwareCursorSetting();
 			RestoreCursorSchemeSetting();
@@ -842,6 +952,7 @@ namespace NegativeScreen
                 protected override void Dispose(bool disposing)
                 {
                         isShuttingDown = true;
+                        StopAutoInvert();
                         UnregisterHotKeys();
                         if (displaySettingsHandler != null)
                                 Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= displaySettingsHandler;
