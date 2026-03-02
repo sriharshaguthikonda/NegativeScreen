@@ -4,3 +4,7 @@ To Do in next releases:
 	
 correct multi screen bug (black part)
 auto-switch on light/dark | when browser on/off
+DXGI auto-invert sometimes returns black frames (rawLum=0.0000). Possible fallbacks:
+ - auto-fallback to GDI sampling if DXGI is black for N seconds
+ - create per-adapter D3D device for each output
+ - switch to Windows Graphics Capture (WGC) when DXGI capture fails
