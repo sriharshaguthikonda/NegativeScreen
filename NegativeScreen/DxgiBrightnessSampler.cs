@@ -14,6 +14,7 @@ namespace NegativeScreen
     {
         private const int MinSampleStep = 4;
         private const int TargetSamples = 16000;
+        private const double RoiMargin = 0.1;
         private readonly object sync = new object();
         private Factory1 factory;
         private D3DDevice device;
@@ -80,7 +81,7 @@ namespace NegativeScreen
             }
         }
 
-        public bool TrySample(string deviceName, out BrightnessSample sample)
+        public bool TrySample(string deviceName, double brightPixelThreshold, out BrightnessSample sample)
         {
             sample = new BrightnessSample { DeviceName = deviceName };
             OutputState state;
@@ -105,8 +106,9 @@ namespace NegativeScreen
                 DataBox box = device.ImmediateContext.MapSubresource(state.Staging, 0, MapMode.Read, SharpDX.Direct3D11.MapFlags.None);
                 try
                 {
-                    double luminance = ComputeLuminance(box, state.Width, state.Height, out int samples);
+                    double luminance = ComputeLuminance(box, state.Width, state.Height, brightPixelThreshold, out double brightRatio, out int samples);
                     sample.Luminance = luminance;
+                    sample.BrightRatio = brightRatio;
                     sample.Width = state.Width;
                     sample.Height = state.Height;
                     sample.SampleCount = samples;
@@ -176,16 +178,38 @@ namespace NegativeScreen
             return frame != null;
         }
 
-        private double ComputeLuminance(DataBox box, int width, int height, out int sampleCount)
+        private double ComputeLuminance(DataBox box, int width, int height, double brightPixelThreshold, out double brightRatio, out int sampleCount)
         {
-            int step = ComputeSampleStep(width, height);
+            brightRatio = 0.0;
+            if (width <= 0 || height <= 0)
+            {
+                sampleCount = 0;
+                return 0.0;
+            }
+            int marginX = (int)Math.Round(width * RoiMargin);
+            int marginY = (int)Math.Round(height * RoiMargin);
+            int startX = Math.Max(0, marginX);
+            int startY = Math.Max(0, marginY);
+            int endX = Math.Max(startX + 1, width - marginX);
+            int endY = Math.Max(startY + 1, height - marginY);
+            if (endX <= startX || endY <= startY)
+            {
+                startX = 0;
+                startY = 0;
+                endX = width;
+                endY = height;
+            }
+            int regionWidth = endX - startX;
+            int regionHeight = endY - startY;
+            int step = ComputeSampleStep(regionWidth, regionHeight);
             long sum = 0;
+            int brightCount = 0;
             sampleCount = 0;
             int rowPitch = box.RowPitch;
-            for (int y = 0; y < height; y += step)
+            for (int y = startY; y < endY; y += step)
             {
                 IntPtr row = IntPtr.Add(box.DataPointer, y * rowPitch);
-                for (int x = 0; x < width; x += step)
+                for (int x = startX; x < endX; x += step)
                 {
                     int offset = x * 4;
                     byte b = Marshal.ReadByte(row, offset);
@@ -193,11 +217,14 @@ namespace NegativeScreen
                     byte r = Marshal.ReadByte(row, offset + 2);
                     double lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0;
                     sum += (long)(lum * 1000000.0);
+                    if (lum >= brightPixelThreshold)
+                        brightCount++;
                     sampleCount++;
                 }
             }
             if (sampleCount == 0)
                 return 0.0;
+            brightRatio = Math.Min(1.0, Math.Max(0.0, (double)brightCount / sampleCount));
             double avg = (double)sum / sampleCount / 1000000.0;
             if (avg < 0.0) return 0.0;
             if (avg > 1.0) return 1.0;

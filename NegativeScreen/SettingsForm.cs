@@ -232,7 +232,14 @@ namespace NegativeScreen
             cfg.AutoInvertSampleMs = currentConfig.AutoInvertSampleMs;
             cfg.AutoInvertBrightThreshold = currentConfig.AutoInvertBrightThreshold;
             cfg.AutoInvertDarkThreshold = currentConfig.AutoInvertDarkThreshold;
-            cfg.AutoInvertDwellMs = currentConfig.AutoInvertDwellMs;
+            cfg.AutoInvertBrightDwellMs = currentConfig.AutoInvertBrightDwellMs;
+            cfg.AutoInvertDarkDwellMs = currentConfig.AutoInvertDarkDwellMs;
+            cfg.AutoInvertMinHoldMs = currentConfig.AutoInvertMinHoldMs;
+            cfg.AutoInvertRequiredSamples = currentConfig.AutoInvertRequiredSamples;
+            cfg.AutoInvertSmoothingAlpha = currentConfig.AutoInvertSmoothingAlpha;
+            cfg.AutoInvertBrightPixelThreshold = currentConfig.AutoInvertBrightPixelThreshold;
+            cfg.AutoInvertBrightCoverageThreshold = currentConfig.AutoInvertBrightCoverageThreshold;
+            cfg.AutoInvertDarkCoverageThreshold = currentConfig.AutoInvertDarkCoverageThreshold;
             cfg.AutoInvertHideOverlays = currentConfig.AutoInvertHideOverlays;
             Result = cfg;
         }

@@ -21,7 +21,14 @@ namespace NegativeScreen
         public int AutoInvertSampleMs = 1000;
         public double AutoInvertBrightThreshold = 0.65;
         public double AutoInvertDarkThreshold = 0.45;
-        public int AutoInvertDwellMs = 1000;
+        public int AutoInvertBrightDwellMs = 3000;
+        public int AutoInvertDarkDwellMs = 6000;
+        public int AutoInvertMinHoldMs = 5000;
+        public int AutoInvertRequiredSamples = 3;
+        public double AutoInvertSmoothingAlpha = 0.2;
+        public double AutoInvertBrightPixelThreshold = 0.8;
+        public double AutoInvertBrightCoverageThreshold = 0.35;
+        public double AutoInvertDarkCoverageThreshold = 0.15;
         public bool AutoInvertHideOverlays = true;
         public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
     }
@@ -45,6 +52,7 @@ namespace NegativeScreen
             bool hasSoftwareCursorSetting = false;
             bool hasNormalizeCursorSchemeSetting = false;
             bool hasAutoInvertSetting = false;
+            bool hasAutoInvertAdvancedSettings = false;
             if (File.Exists(ConfigPath))
             {
                 try
@@ -56,6 +64,7 @@ namespace NegativeScreen
                         hasSoftwareCursorSetting = xml.IndexOf("<ForceSoftwareCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasNormalizeCursorSchemeSetting = xml.IndexOf("<NormalizeCursorScheme>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasAutoInvertSetting = xml.IndexOf("<AutoInvertByBrightness>", StringComparison.OrdinalIgnoreCase) >= 0;
+                        hasAutoInvertAdvancedSettings = xml.IndexOf("<AutoInvertBrightDwellMs>", StringComparison.OrdinalIgnoreCase) >= 0;
                     }
                     catch
                     {
@@ -63,6 +72,7 @@ namespace NegativeScreen
                         hasSoftwareCursorSetting = false;
                         hasNormalizeCursorSchemeSetting = false;
                         hasAutoInvertSetting = false;
+                        hasAutoInvertAdvancedSettings = false;
                     }
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
@@ -83,7 +93,14 @@ namespace NegativeScreen
                 cfg.AutoInvertSampleMs = 1000;
                 cfg.AutoInvertBrightThreshold = 0.65;
                 cfg.AutoInvertDarkThreshold = 0.45;
-                cfg.AutoInvertDwellMs = 1000;
+                cfg.AutoInvertBrightDwellMs = 3000;
+                cfg.AutoInvertDarkDwellMs = 6000;
+                cfg.AutoInvertMinHoldMs = 5000;
+                cfg.AutoInvertRequiredSamples = 3;
+                cfg.AutoInvertSmoothingAlpha = 0.2;
+                cfg.AutoInvertBrightPixelThreshold = 0.8;
+                cfg.AutoInvertBrightCoverageThreshold = 0.35;
+                cfg.AutoInvertDarkCoverageThreshold = 0.15;
                 cfg.AutoInvertHideOverlays = true;
             }
             else if (!hasCursorSetting)
@@ -105,8 +122,26 @@ namespace NegativeScreen
                 cfg.AutoInvertSampleMs = 1000;
                 cfg.AutoInvertBrightThreshold = 0.65;
                 cfg.AutoInvertDarkThreshold = 0.45;
-                cfg.AutoInvertDwellMs = 1000;
+                cfg.AutoInvertBrightDwellMs = 3000;
+                cfg.AutoInvertDarkDwellMs = 6000;
+                cfg.AutoInvertMinHoldMs = 5000;
+                cfg.AutoInvertRequiredSamples = 3;
+                cfg.AutoInvertSmoothingAlpha = 0.2;
+                cfg.AutoInvertBrightPixelThreshold = 0.8;
+                cfg.AutoInvertBrightCoverageThreshold = 0.35;
+                cfg.AutoInvertDarkCoverageThreshold = 0.15;
                 cfg.AutoInvertHideOverlays = true;
+            }
+            else if (!hasAutoInvertAdvancedSettings)
+            {
+                cfg.AutoInvertBrightDwellMs = 3000;
+                cfg.AutoInvertDarkDwellMs = 6000;
+                cfg.AutoInvertMinHoldMs = 5000;
+                cfg.AutoInvertRequiredSamples = 3;
+                cfg.AutoInvertSmoothingAlpha = 0.2;
+                cfg.AutoInvertBrightPixelThreshold = 0.8;
+                cfg.AutoInvertBrightCoverageThreshold = 0.35;
+                cfg.AutoInvertDarkCoverageThreshold = 0.15;
             }
 
             // Only add all monitors if this is a new config
