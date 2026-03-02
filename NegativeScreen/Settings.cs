@@ -29,7 +29,7 @@ namespace NegativeScreen
         public double AutoInvertBrightPixelThreshold = 0.8;
         public double AutoInvertBrightCoverageThreshold = 0.35;
         public double AutoInvertDarkCoverageThreshold = 0.15;
-        public bool AutoInvertHideOverlays = true;
+        public bool AutoInvertHideOverlays = false;
         public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
     }
 
@@ -101,7 +101,7 @@ namespace NegativeScreen
                 cfg.AutoInvertBrightPixelThreshold = 0.8;
                 cfg.AutoInvertBrightCoverageThreshold = 0.35;
                 cfg.AutoInvertDarkCoverageThreshold = 0.15;
-                cfg.AutoInvertHideOverlays = true;
+                cfg.AutoInvertHideOverlays = false;
             }
             else if (!hasCursorSetting)
             {
@@ -130,7 +130,7 @@ namespace NegativeScreen
                 cfg.AutoInvertBrightPixelThreshold = 0.8;
                 cfg.AutoInvertBrightCoverageThreshold = 0.35;
                 cfg.AutoInvertDarkCoverageThreshold = 0.15;
-                cfg.AutoInvertHideOverlays = true;
+                cfg.AutoInvertHideOverlays = false;
             }
             else if (!hasAutoInvertAdvancedSettings)
             {

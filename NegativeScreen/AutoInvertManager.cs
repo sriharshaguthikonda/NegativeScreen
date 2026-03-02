@@ -9,6 +9,7 @@ namespace NegativeScreen
         private readonly OverlayManager overlayManager;
         private readonly IBrightnessSampler sampler;
         private readonly AutoInvertLogger logger;
+        private readonly AutoInvertConsoleLog consoleLog;
         private readonly Dictionary<string, AutoInvertState> states = new Dictionary<string, AutoInvertState>(StringComparer.OrdinalIgnoreCase);
         private AutoInvertSettings settings;
         private Timer timer;
@@ -21,6 +22,7 @@ namespace NegativeScreen
             this.settings = settings;
             this.sampler = sampler;
             this.logger = new AutoInvertLogger(AppDomain.CurrentDomain.BaseDirectory);
+            this.consoleLog = new AutoInvertConsoleLog(AppDomain.CurrentDomain.BaseDirectory);
         }
 
         public void Start()
@@ -40,6 +42,7 @@ namespace NegativeScreen
             }
             sampler.Dispose();
             logger.Dispose();
+            consoleLog.Dispose();
             states.Clear();
         }
 
@@ -49,14 +52,9 @@ namespace NegativeScreen
                 return;
             if (Interlocked.Exchange(ref isRunning, 1) == 1)
                 return;
-            List<Tuple<NegativeOverlay, bool>> visibilitySnapshot = null;
             List<Tuple<string, bool>> pendingChanges = null;
             try
             {
-                if (settings.HideOverlays)
-                {
-                    visibilitySnapshot = overlayManager.HideOverlaysForAutoInvert();
-                }
                 string[] deviceNames = overlayManager.GetActiveMonitorDeviceNames();
                 if (deviceNames.Length == 0)
                     return;
@@ -68,17 +66,27 @@ namespace NegativeScreen
                     if (!sampler.TrySample(deviceName, settings.BrightPixelThreshold, out BrightnessSample sample))
                         continue;
                     AutoInvertState stateEntry = GetState(deviceName);
-                    stateEntry.LastLuminance = sample.Luminance;
-                    stateEntry.LastBrightRatio = sample.BrightRatio;
-                    UpdateSmoothed(stateEntry, sample.Luminance);
+                    double effectiveLum = sample.Luminance;
+                    double effectiveBrightRatio = sample.BrightRatio;
+                    if (stateEntry.IsInverted)
+                    {
+                        effectiveLum = 1.0 - effectiveLum;
+                        effectiveBrightRatio = 1.0 - effectiveBrightRatio;
+                    }
+                    effectiveLum = Clamp01(effectiveLum);
+                    effectiveBrightRatio = Clamp01(effectiveBrightRatio);
+                    stateEntry.LastLuminance = effectiveLum;
+                    stateEntry.LastBrightRatio = effectiveBrightRatio;
+                    UpdateSmoothed(stateEntry, effectiveLum);
                     if (IsHoldActive(stateEntry, now))
                     {
                         ResetPending(stateEntry);
                         logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
+                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, null, true));
                         continue;
                     }
-                    bool brightCoverage = sample.BrightRatio >= settings.BrightCoverageThreshold;
-                    bool darkCoverage = sample.BrightRatio <= settings.DarkCoverageThreshold;
+                    bool brightCoverage = effectiveBrightRatio >= settings.BrightCoverageThreshold;
+                    bool darkCoverage = effectiveBrightRatio <= settings.DarkCoverageThreshold;
                     bool? desired = null;
                     if (!stateEntry.IsInverted && stateEntry.SmoothedLuminance >= settings.BrightThreshold && brightCoverage)
                         desired = true;
@@ -122,14 +130,11 @@ namespace NegativeScreen
                         ResetPending(stateEntry);
                     }
                     logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
+                    consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, desired, false));
                 }
             }
             finally
             {
-                if (visibilitySnapshot != null)
-                {
-                    overlayManager.RestoreOverlaysAfterAutoInvert(visibilitySnapshot);
-                }
                 if (pendingChanges != null && pendingChanges.Count > 0)
                 {
                     ApplyQueuedChanges(pendingChanges);
@@ -201,7 +206,30 @@ namespace NegativeScreen
                 state.IsInverted = change.Item2;
                 state.LastChangeTick = Environment.TickCount;
                 ResetPending(state);
+                consoleLog.Log(string.Format("APPLY device={0} invert={1}", change.Item1, change.Item2 ? "1" : "0"));
             }
+        }
+
+        private string BuildSampleLog(string deviceName, BrightnessSample sample, AutoInvertState state, bool? desired, bool hold)
+        {
+            return string.Format("SAMPLE device={0} rawLum={1:F4} rawBrightRatio={2:F4} effLum={3:F4} smoothed={4:F4} inverted={5} desired={6} streak={7} pending={8} hold={9}",
+                deviceName,
+                sample.Luminance,
+                sample.BrightRatio,
+                state.LastLuminance,
+                state.SmoothedLuminance,
+                state.IsInverted ? "1" : "0",
+                desired.HasValue ? (desired.Value ? "1" : "0") : "-",
+                state.DesiredStreak,
+                state.PendingInvert.HasValue ? (state.PendingInvert.Value ? "1" : "0") : "-",
+                hold ? "1" : "0");
+        }
+
+        private double Clamp01(double value)
+        {
+            if (value < 0.0) return 0.0;
+            if (value > 1.0) return 1.0;
+            return value;
         }
     }
 }

@@ -95,9 +95,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BuiltinMatrices.cs" />
+    <Compile Include="AutoInvertConsoleLog.cs" />
     <Compile Include="AutoInvertLogger.cs" />
     <Compile Include="AutoInvertManager.cs" />
     <Compile Include="AutoInvertModels.cs" />
+    <Compile Include="BuildInfo.cs" />
     <Compile Include="GdiBrightnessSampler.cs" />
     <Compile Include="IBrightnessSampler.cs" />
     <Compile Include="NativeMethods.cs" />
