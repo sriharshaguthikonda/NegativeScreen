@@ -21,6 +21,14 @@ namespace NegativeScreen
         private CheckBox softwareCursor = new CheckBox();
         private CheckBox normalizeCursorScheme = new CheckBox();
         private CheckBox autoInvert = new CheckBox();
+        private CheckBox autoInvertFastPathDelta = new CheckBox();
+        private CheckBox autoInvertFastPathCoverage = new CheckBox();
+        private CheckBox autoInvertDualEma = new CheckBox();
+        private CheckBox autoInvertCoverageGate = new CheckBox();
+        private CheckBox autoInvertBurstSampling = new CheckBox();
+        private CheckBox autoInvertConsecutive = new CheckBox();
+        private CheckBox autoInvertDirectionalDebounce = new CheckBox();
+        private CheckBox autoInvertTargetResponse = new CheckBox();
         private Button renameButton = new Button();
 
         private Dictionary<string, string> aliases = new Dictionary<string, string>();
@@ -117,6 +125,38 @@ namespace NegativeScreen
             autoInvert.Dock = DockStyle.Bottom;
             autoInvert.Checked = current.AutoInvertByBrightness;
 
+            autoInvertFastPathDelta.Text = "Auto invert fast-path on brightness jump";
+            autoInvertFastPathDelta.Dock = DockStyle.Bottom;
+            autoInvertFastPathDelta.Checked = current.AutoInvertUseFastPathDelta;
+
+            autoInvertFastPathCoverage.Text = "Auto invert fast-path on coverage spike";
+            autoInvertFastPathCoverage.Dock = DockStyle.Bottom;
+            autoInvertFastPathCoverage.Checked = current.AutoInvertUseFastPathCoverage;
+
+            autoInvertDualEma.Text = "Auto invert dual-EMA trigger";
+            autoInvertDualEma.Dock = DockStyle.Bottom;
+            autoInvertDualEma.Checked = current.AutoInvertUseDualEma;
+
+            autoInvertCoverageGate.Text = "Auto invert require coverage for slow-path";
+            autoInvertCoverageGate.Dock = DockStyle.Bottom;
+            autoInvertCoverageGate.Checked = current.AutoInvertUseCoverageGate;
+
+            autoInvertBurstSampling.Text = "Auto invert burst sampling on trigger";
+            autoInvertBurstSampling.Dock = DockStyle.Bottom;
+            autoInvertBurstSampling.Checked = current.AutoInvertUseBurstSampling;
+
+            autoInvertConsecutive.Text = "Auto invert consecutive-frame trigger";
+            autoInvertConsecutive.Dock = DockStyle.Bottom;
+            autoInvertConsecutive.Checked = current.AutoInvertUseConsecutiveTrigger;
+
+            autoInvertDirectionalDebounce.Text = "Auto invert direction-dependent debounce";
+            autoInvertDirectionalDebounce.Dock = DockStyle.Bottom;
+            autoInvertDirectionalDebounce.Checked = current.AutoInvertUseDirectionalDebounce;
+
+            autoInvertTargetResponse.Text = "Auto invert target-response smoothing";
+            autoInvertTargetResponse.Dock = DockStyle.Bottom;
+            autoInvertTargetResponse.Checked = current.AutoInvertUseTargetResponse;
+
             darkMode.Text = "Dark mode";
             darkMode.Dock = DockStyle.Bottom;
             darkMode.Checked = current.DarkMode;
@@ -136,6 +176,14 @@ namespace NegativeScreen
             this.Controls.Add(softwareCursor);
             this.Controls.Add(normalizeCursorScheme);
             this.Controls.Add(autoInvert);
+            this.Controls.Add(autoInvertFastPathDelta);
+            this.Controls.Add(autoInvertFastPathCoverage);
+            this.Controls.Add(autoInvertDualEma);
+            this.Controls.Add(autoInvertCoverageGate);
+            this.Controls.Add(autoInvertBurstSampling);
+            this.Controls.Add(autoInvertConsecutive);
+            this.Controls.Add(autoInvertDirectionalDebounce);
+            this.Controls.Add(autoInvertTargetResponse);
             this.Controls.Add(darkMode);
 
             this.AcceptButton = applyButton;
@@ -240,6 +288,22 @@ namespace NegativeScreen
             cfg.AutoInvertBrightPixelThreshold = currentConfig.AutoInvertBrightPixelThreshold;
             cfg.AutoInvertBrightCoverageThreshold = currentConfig.AutoInvertBrightCoverageThreshold;
             cfg.AutoInvertDarkCoverageThreshold = currentConfig.AutoInvertDarkCoverageThreshold;
+            cfg.AutoInvertUseFastPathDelta = autoInvertFastPathDelta.Checked;
+            cfg.AutoInvertUseFastPathCoverage = autoInvertFastPathCoverage.Checked;
+            cfg.AutoInvertFastPathDeltaThreshold = currentConfig.AutoInvertFastPathDeltaThreshold;
+            cfg.AutoInvertFastPathCoverageThreshold = currentConfig.AutoInvertFastPathCoverageThreshold;
+            cfg.AutoInvertUseDualEma = autoInvertDualEma.Checked;
+            cfg.AutoInvertFastEmaAlpha = currentConfig.AutoInvertFastEmaAlpha;
+            cfg.AutoInvertSlowEmaAlpha = currentConfig.AutoInvertSlowEmaAlpha;
+            cfg.AutoInvertEmaDiffThreshold = currentConfig.AutoInvertEmaDiffThreshold;
+            cfg.AutoInvertUseBurstSampling = autoInvertBurstSampling.Checked;
+            cfg.AutoInvertBurstSampleMs = currentConfig.AutoInvertBurstSampleMs;
+            cfg.AutoInvertBurstDurationMs = currentConfig.AutoInvertBurstDurationMs;
+            cfg.AutoInvertUseConsecutiveTrigger = autoInvertConsecutive.Checked;
+            cfg.AutoInvertUseCoverageGate = autoInvertCoverageGate.Checked;
+            cfg.AutoInvertUseDirectionalDebounce = autoInvertDirectionalDebounce.Checked;
+            cfg.AutoInvertUseTargetResponse = autoInvertTargetResponse.Checked;
+            cfg.AutoInvertTargetResponseMs = currentConfig.AutoInvertTargetResponseMs;
             cfg.AutoInvertHideOverlays = currentConfig.AutoInvertHideOverlays;
             Result = cfg;
         }

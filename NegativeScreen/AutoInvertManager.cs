@@ -13,6 +13,10 @@ namespace NegativeScreen
         private readonly Dictionary<string, AutoInvertState> states = new Dictionary<string, AutoInvertState>(StringComparer.OrdinalIgnoreCase);
         private AutoInvertSettings settings;
         private Timer timer;
+        private readonly object timerSync = new object();
+        private int baseSampleMs;
+        private int currentSampleMs;
+        private long burstUntilTick;
         private int isRunning;
         private bool disposed;
 
@@ -29,8 +33,26 @@ namespace NegativeScreen
         {
             if (!settings.Enabled)
                 return;
+            baseSampleMs = settings.SampleMs;
+            currentSampleMs = baseSampleMs;
+            consoleLog.Log(string.Format("SETTINGS sampleMs={0} bright={1:F2} dark={2:F2} brightDwell={3} darkDwell={4} minHold={5} reqSamples={6} alpha={7:F2} fastDelta={8} fastCov={9} dualEma={10} burst={11} coverageGate={12} dirDebounce={13} targetResp={14}",
+                settings.SampleMs,
+                settings.BrightThreshold,
+                settings.DarkThreshold,
+                settings.BrightDwellMs,
+                settings.DarkDwellMs,
+                settings.MinHoldMs,
+                settings.RequiredSamples,
+                settings.SmoothingAlpha,
+                settings.UseFastPathDelta ? "1" : "0",
+                settings.UseFastPathCoverage ? "1" : "0",
+                settings.UseDualEma ? "1" : "0",
+                settings.UseBurstSampling ? "1" : "0",
+                settings.UseCoverageGate ? "1" : "0",
+                settings.UseDirectionalDebounce ? "1" : "0",
+                settings.UseTargetResponse ? "1" : "0"));
             InitializeNow();
-            timer = new Timer(OnTimer, null, settings.SampleMs, settings.SampleMs);
+            timer = new Timer(OnTimer, null, currentSampleMs, currentSampleMs);
         }
 
         public void Dispose()
@@ -41,6 +63,7 @@ namespace NegativeScreen
                 timer.Dispose();
                 timer = null;
             }
+            burstUntilTick = 0;
             sampler.Dispose();
             logger.Dispose();
             consoleLog.Dispose();
@@ -60,6 +83,12 @@ namespace NegativeScreen
                 if (deviceNames.Length == 0)
                     return;
                 long now = Environment.TickCount;
+                if (settings.UseBurstSampling && burstUntilTick > 0 && unchecked(now - burstUntilTick) >= 0)
+                {
+                    burstUntilTick = 0;
+                    UpdateTimerInterval(baseSampleMs);
+                    consoleLog.Log(string.Format("BURST_END interval={0}", baseSampleMs));
+                }
                 pendingChanges = new List<Tuple<string, bool>>();
                 for (int i = 0; i < deviceNames.Length; i++)
                 {
@@ -67,6 +96,8 @@ namespace NegativeScreen
                     if (!sampler.TrySample(deviceName, settings.BrightPixelThreshold, out BrightnessSample sample))
                         continue;
                     AutoInvertState stateEntry = GetState(deviceName);
+                    double prevLum = stateEntry.LastLuminance;
+                    bool hadPrev = stateEntry.HasSmoothed;
                     double effectiveLum = sample.Luminance;
                     double effectiveBrightRatio = sample.BrightRatio;
                     if (stateEntry.IsInverted)
@@ -79,22 +110,76 @@ namespace NegativeScreen
                     stateEntry.LastLuminance = effectiveLum;
                     stateEntry.LastBrightRatio = effectiveBrightRatio;
                     UpdateSmoothed(stateEntry, effectiveLum);
+                    UpdateDualEma(stateEntry, effectiveLum);
+                    double delta = hadPrev ? (effectiveLum - prevLum) : 0.0;
+                    double emaDiff = stateEntry.FastEma - stateEntry.SlowEma;
                     if (IsHoldActive(stateEntry, now))
                     {
                         ResetPending(stateEntry);
                         logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
-                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, null, true));
+                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, null, true, delta, emaDiff, false, false));
                         continue;
                     }
-                    bool brightCoverage = effectiveBrightRatio >= settings.BrightCoverageThreshold;
-                    bool darkCoverage = effectiveBrightRatio <= settings.DarkCoverageThreshold;
+                    bool brightCoverage = !settings.UseCoverageGate || effectiveBrightRatio >= settings.BrightCoverageThreshold;
+                    bool darkCoverage = !settings.UseCoverageGate || effectiveBrightRatio <= settings.DarkCoverageThreshold;
                     bool? desired = null;
+                    bool fastPathTriggered = false;
+                    bool dualEmaTriggered = false;
+                    bool burstTriggered = false;
+                    bool? fastDesired = null;
+                    if (!stateEntry.IsInverted)
+                    {
+                        if (settings.UseFastPathDelta && stateEntry.HasSmoothed && delta >= settings.FastPathDeltaThreshold && brightCoverage && effectiveLum >= settings.BrightThreshold)
+                        {
+                            fastPathTriggered = true;
+                            fastDesired = true;
+                        }
+                        if (settings.UseFastPathCoverage && effectiveBrightRatio >= settings.FastPathCoverageThreshold)
+                        {
+                            fastPathTriggered = true;
+                            fastDesired = true;
+                        }
+                    }
+                    if (settings.UseDualEma && Math.Abs(emaDiff) >= settings.EmaDiffThreshold)
+                    {
+                        if (!stateEntry.IsInverted && emaDiff >= settings.EmaDiffThreshold && brightCoverage)
+                        {
+                            dualEmaTriggered = true;
+                            fastDesired = true;
+                        }
+                        else if (stateEntry.IsInverted && emaDiff <= -settings.EmaDiffThreshold && darkCoverage)
+                        {
+                            dualEmaTriggered = true;
+                            fastDesired = false;
+                        }
+                    }
+                    if (settings.UseBurstSampling)
+                    {
+                        if (fastPathTriggered || dualEmaTriggered)
+                            burstTriggered = true;
+                        else if (settings.UseFastPathDelta && stateEntry.HasSmoothed && Math.Abs(delta) >= settings.FastPathDeltaThreshold)
+                            burstTriggered = true;
+                    }
+                    if (burstTriggered)
+                    {
+                        StartBurst(now);
+                    }
+                    if (fastDesired.HasValue)
+                    {
+                        QueueChange(pendingChanges, deviceName, fastDesired.Value);
+                        stateEntry.PendingInvert = null;
+                        ResetPending(stateEntry);
+                        logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
+                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, fastDesired, false, delta, emaDiff, fastPathTriggered, dualEmaTriggered));
+                        continue;
+                    }
                     if (!stateEntry.IsInverted && stateEntry.SmoothedLuminance >= settings.BrightThreshold && brightCoverage)
                         desired = true;
                     else if (stateEntry.IsInverted && stateEntry.SmoothedLuminance <= settings.DarkThreshold && darkCoverage)
                         desired = false;
                     if (desired.HasValue)
                     {
+                        int requiredSamples = settings.UseConsecutiveTrigger ? settings.RequiredSamples : 1;
                         if (stateEntry.LastDesired.HasValue && stateEntry.LastDesired.Value == desired.Value)
                         {
                             stateEntry.DesiredStreak++;
@@ -104,11 +189,16 @@ namespace NegativeScreen
                             stateEntry.LastDesired = desired.Value;
                             stateEntry.DesiredStreak = 1;
                         }
-                        if (stateEntry.DesiredStreak >= settings.RequiredSamples)
+                        if (stateEntry.DesiredStreak >= requiredSamples)
                         {
-                            if (stateEntry.PendingInvert.HasValue && stateEntry.PendingInvert.Value == desired.Value)
+                            if (settings.UseConsecutiveTrigger && desired.Value && stateEntry.DesiredStreak >= requiredSamples)
                             {
-                                int dwellMs = desired.Value ? settings.BrightDwellMs : settings.DarkDwellMs;
+                                QueueChange(pendingChanges, deviceName, true);
+                                stateEntry.PendingInvert = null;
+                            }
+                            else if (stateEntry.PendingInvert.HasValue && stateEntry.PendingInvert.Value == desired.Value)
+                            {
+                                int dwellMs = settings.UseDirectionalDebounce ? (desired.Value ? settings.BrightDwellMs : settings.DarkDwellMs) : settings.BrightDwellMs;
                                 if (dwellMs <= 0 || unchecked(now - stateEntry.PendingSinceTick) >= dwellMs)
                                 {
                                     QueueChange(pendingChanges, deviceName, desired.Value);
@@ -131,7 +221,7 @@ namespace NegativeScreen
                         ResetPending(stateEntry);
                     }
                     logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
-                    consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, desired, false));
+                    consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, desired, false, delta, emaDiff, fastPathTriggered, dualEmaTriggered));
                 }
             }
             finally
@@ -162,8 +252,12 @@ namespace NegativeScreen
                 stateEntry.LastLuminance = effectiveLum;
                 stateEntry.LastBrightRatio = effectiveBrightRatio;
                 stateEntry.HasSmoothed = false;
+                stateEntry.HasFastEma = false;
+                stateEntry.HasSlowEma = false;
                 UpdateSmoothed(stateEntry, effectiveLum);
-                bool shouldInvert = effectiveLum >= settings.BrightThreshold && effectiveBrightRatio >= settings.BrightCoverageThreshold;
+                UpdateDualEma(stateEntry, effectiveLum);
+                bool coverageOk = !settings.UseCoverageGate || effectiveBrightRatio >= settings.BrightCoverageThreshold;
+                bool shouldInvert = effectiveLum >= settings.BrightThreshold && coverageOk;
                 overlayManager.SetMonitorOverlayVisible(deviceName, shouldInvert);
                 stateEntry.IsInverted = shouldInvert;
                 stateEntry.LastChangeTick = Environment.TickCount;
@@ -201,6 +295,30 @@ namespace NegativeScreen
             }
             double alpha = settings.SmoothingAlpha;
             state.SmoothedLuminance = alpha * current + (1.0 - alpha) * state.SmoothedLuminance;
+        }
+
+        private void UpdateDualEma(AutoInvertState state, double current)
+        {
+            if (!settings.UseDualEma)
+                return;
+            if (!state.HasFastEma)
+            {
+                state.FastEma = current;
+                state.HasFastEma = true;
+            }
+            else
+            {
+                state.FastEma = settings.FastEmaAlpha * current + (1.0 - settings.FastEmaAlpha) * state.FastEma;
+            }
+            if (!state.HasSlowEma)
+            {
+                state.SlowEma = current;
+                state.HasSlowEma = true;
+            }
+            else
+            {
+                state.SlowEma = settings.SlowEmaAlpha * current + (1.0 - settings.SlowEmaAlpha) * state.SlowEma;
+            }
         }
 
         private bool IsHoldActive(AutoInvertState state, long now)
@@ -245,19 +363,46 @@ namespace NegativeScreen
             }
         }
 
-        private string BuildSampleLog(string deviceName, BrightnessSample sample, AutoInvertState state, bool? desired, bool hold)
+        private string BuildSampleLog(string deviceName, BrightnessSample sample, AutoInvertState state, bool? desired, bool hold, double delta, double emaDiff, bool fastPath, bool dualEma)
         {
-            return string.Format("SAMPLE device={0} rawLum={1:F4} rawBrightRatio={2:F4} effLum={3:F4} smoothed={4:F4} inverted={5} desired={6} streak={7} pending={8} hold={9}",
+            return string.Format("SAMPLE device={0} rawLum={1:F4} rawBrightRatio={2:F4} effLum={3:F4} smoothed={4:F4} delta={5:F4} emaDiff={6:F4} inverted={7} desired={8} streak={9} pending={10} hold={11} fast={12} dualEma={13}",
                 deviceName,
                 sample.Luminance,
                 sample.BrightRatio,
                 state.LastLuminance,
                 state.SmoothedLuminance,
+                delta,
+                emaDiff,
                 state.IsInverted ? "1" : "0",
                 desired.HasValue ? (desired.Value ? "1" : "0") : "-",
                 state.DesiredStreak,
                 state.PendingInvert.HasValue ? (state.PendingInvert.Value ? "1" : "0") : "-",
-                hold ? "1" : "0");
+                hold ? "1" : "0",
+                fastPath ? "1" : "0",
+                dualEma ? "1" : "0");
+        }
+
+        private void StartBurst(long now)
+        {
+            if (settings.BurstDurationMs <= 0)
+                return;
+            burstUntilTick = now + settings.BurstDurationMs;
+            UpdateTimerInterval(settings.BurstSampleMs);
+            consoleLog.Log(string.Format("BURST_START interval={0} duration={1}", settings.BurstSampleMs, settings.BurstDurationMs));
+        }
+
+        private void UpdateTimerInterval(int intervalMs)
+        {
+            int safeInterval = Math.Max(50, intervalMs);
+            lock (timerSync)
+            {
+                if (timer == null)
+                    return;
+                if (currentSampleMs == safeInterval)
+                    return;
+                currentSampleMs = safeInterval;
+                timer.Change(currentSampleMs, currentSampleMs);
+            }
         }
 
         private double Clamp01(double value)

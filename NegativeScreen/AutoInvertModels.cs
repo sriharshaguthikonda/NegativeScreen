@@ -16,6 +16,22 @@ namespace NegativeScreen
         public double BrightPixelThreshold;
         public double BrightCoverageThreshold;
         public double DarkCoverageThreshold;
+        public bool UseFastPathDelta;
+        public bool UseFastPathCoverage;
+        public double FastPathDeltaThreshold;
+        public double FastPathCoverageThreshold;
+        public bool UseDualEma;
+        public double FastEmaAlpha;
+        public double SlowEmaAlpha;
+        public double EmaDiffThreshold;
+        public bool UseBurstSampling;
+        public int BurstSampleMs;
+        public int BurstDurationMs;
+        public bool UseConsecutiveTrigger;
+        public bool UseCoverageGate;
+        public bool UseDirectionalDebounce;
+        public bool UseTargetResponse;
+        public int TargetResponseMs;
         public bool HideOverlays;
 
         public static AutoInvertSettings FromConfig(Config cfg)
@@ -34,8 +50,28 @@ namespace NegativeScreen
                 BrightPixelThreshold = Clamp(cfg.AutoInvertBrightPixelThreshold, 0.0, 1.0),
                 BrightCoverageThreshold = Clamp(cfg.AutoInvertBrightCoverageThreshold, 0.0, 1.0),
                 DarkCoverageThreshold = Clamp(cfg.AutoInvertDarkCoverageThreshold, 0.0, 1.0),
+                UseFastPathDelta = cfg.AutoInvertUseFastPathDelta,
+                UseFastPathCoverage = cfg.AutoInvertUseFastPathCoverage,
+                FastPathDeltaThreshold = Clamp(cfg.AutoInvertFastPathDeltaThreshold, 0.0, 1.0),
+                FastPathCoverageThreshold = Clamp(cfg.AutoInvertFastPathCoverageThreshold, 0.0, 1.0),
+                UseDualEma = cfg.AutoInvertUseDualEma,
+                FastEmaAlpha = Clamp(cfg.AutoInvertFastEmaAlpha, 0.05, 1.0),
+                SlowEmaAlpha = Clamp(cfg.AutoInvertSlowEmaAlpha, 0.05, 1.0),
+                EmaDiffThreshold = Clamp(cfg.AutoInvertEmaDiffThreshold, 0.0, 1.0),
+                UseBurstSampling = cfg.AutoInvertUseBurstSampling,
+                BurstSampleMs = Math.Max(50, cfg.AutoInvertBurstSampleMs),
+                BurstDurationMs = Math.Max(0, cfg.AutoInvertBurstDurationMs),
+                UseConsecutiveTrigger = cfg.AutoInvertUseConsecutiveTrigger,
+                UseCoverageGate = cfg.AutoInvertUseCoverageGate,
+                UseDirectionalDebounce = cfg.AutoInvertUseDirectionalDebounce,
+                UseTargetResponse = cfg.AutoInvertUseTargetResponse,
+                TargetResponseMs = Math.Max(100, cfg.AutoInvertTargetResponseMs),
                 HideOverlays = cfg.AutoInvertHideOverlays
             };
+            if (settings.UseTargetResponse)
+            {
+                settings.SmoothingAlpha = ComputeAlpha(settings.SampleMs, settings.TargetResponseMs);
+            }
             if (settings.BrightThreshold <= settings.DarkThreshold)
             {
                 double mid = (settings.BrightThreshold + settings.DarkThreshold) / 2.0;
@@ -57,6 +93,15 @@ namespace NegativeScreen
             if (value > max) return max;
             return value;
         }
+
+        private static double ComputeAlpha(int sampleMs, int targetMs)
+        {
+            if (targetMs <= 0)
+                return 1.0;
+            double ratio = Math.Max(1.0, sampleMs) / targetMs;
+            double alpha = 1.0 - Math.Exp(-ratio);
+            return Clamp(alpha, 0.05, 1.0);
+        }
     }
 
     internal sealed class AutoInvertState
@@ -66,6 +111,10 @@ namespace NegativeScreen
         public long PendingSinceTick;
         public double LastLuminance;
         public double SmoothedLuminance;
+        public double FastEma;
+        public double SlowEma;
+        public bool HasFastEma;
+        public bool HasSlowEma;
         public double LastBrightRatio;
         public bool HasSmoothed;
         public bool? LastDesired;

@@ -29,6 +29,22 @@ namespace NegativeScreen
         public double AutoInvertBrightPixelThreshold = 0.8;
         public double AutoInvertBrightCoverageThreshold = 0.35;
         public double AutoInvertDarkCoverageThreshold = 0.15;
+        public bool AutoInvertUseFastPathDelta = true;
+        public bool AutoInvertUseFastPathCoverage = true;
+        public double AutoInvertFastPathDeltaThreshold = 0.25;
+        public double AutoInvertFastPathCoverageThreshold = 0.8;
+        public bool AutoInvertUseDualEma = true;
+        public double AutoInvertFastEmaAlpha = 0.6;
+        public double AutoInvertSlowEmaAlpha = 0.15;
+        public double AutoInvertEmaDiffThreshold = 0.2;
+        public bool AutoInvertUseBurstSampling = true;
+        public int AutoInvertBurstSampleMs = 200;
+        public int AutoInvertBurstDurationMs = 2000;
+        public bool AutoInvertUseConsecutiveTrigger = true;
+        public bool AutoInvertUseCoverageGate = true;
+        public bool AutoInvertUseDirectionalDebounce = true;
+        public bool AutoInvertUseTargetResponse = false;
+        public int AutoInvertTargetResponseMs = 1200;
         public bool AutoInvertHideOverlays = false;
         public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
     }
@@ -53,6 +69,7 @@ namespace NegativeScreen
             bool hasNormalizeCursorSchemeSetting = false;
             bool hasAutoInvertSetting = false;
             bool hasAutoInvertAdvancedSettings = false;
+            bool hasAutoInvertStrategySettings = false;
             if (File.Exists(ConfigPath))
             {
                 try
@@ -65,6 +82,7 @@ namespace NegativeScreen
                         hasNormalizeCursorSchemeSetting = xml.IndexOf("<NormalizeCursorScheme>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasAutoInvertSetting = xml.IndexOf("<AutoInvertByBrightness>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasAutoInvertAdvancedSettings = xml.IndexOf("<AutoInvertBrightDwellMs>", StringComparison.OrdinalIgnoreCase) >= 0;
+                        hasAutoInvertStrategySettings = xml.IndexOf("<AutoInvertUseFastPathDelta>", StringComparison.OrdinalIgnoreCase) >= 0;
                     }
                     catch
                     {
@@ -73,6 +91,7 @@ namespace NegativeScreen
                         hasNormalizeCursorSchemeSetting = false;
                         hasAutoInvertSetting = false;
                         hasAutoInvertAdvancedSettings = false;
+                        hasAutoInvertStrategySettings = false;
                     }
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
@@ -101,6 +120,22 @@ namespace NegativeScreen
                 cfg.AutoInvertBrightPixelThreshold = 0.8;
                 cfg.AutoInvertBrightCoverageThreshold = 0.35;
                 cfg.AutoInvertDarkCoverageThreshold = 0.15;
+                cfg.AutoInvertUseFastPathDelta = true;
+                cfg.AutoInvertUseFastPathCoverage = true;
+                cfg.AutoInvertFastPathDeltaThreshold = 0.25;
+                cfg.AutoInvertFastPathCoverageThreshold = 0.8;
+                cfg.AutoInvertUseDualEma = true;
+                cfg.AutoInvertFastEmaAlpha = 0.6;
+                cfg.AutoInvertSlowEmaAlpha = 0.15;
+                cfg.AutoInvertEmaDiffThreshold = 0.2;
+                cfg.AutoInvertUseBurstSampling = true;
+                cfg.AutoInvertBurstSampleMs = 200;
+                cfg.AutoInvertBurstDurationMs = 2000;
+                cfg.AutoInvertUseConsecutiveTrigger = true;
+                cfg.AutoInvertUseCoverageGate = true;
+                cfg.AutoInvertUseDirectionalDebounce = true;
+                cfg.AutoInvertUseTargetResponse = false;
+                cfg.AutoInvertTargetResponseMs = 1200;
                 cfg.AutoInvertHideOverlays = false;
             }
             else if (!hasCursorSetting)
@@ -142,6 +177,25 @@ namespace NegativeScreen
                 cfg.AutoInvertBrightPixelThreshold = 0.8;
                 cfg.AutoInvertBrightCoverageThreshold = 0.35;
                 cfg.AutoInvertDarkCoverageThreshold = 0.15;
+            }
+            if (!hasAutoInvertStrategySettings)
+            {
+                cfg.AutoInvertUseFastPathDelta = true;
+                cfg.AutoInvertUseFastPathCoverage = true;
+                cfg.AutoInvertFastPathDeltaThreshold = 0.25;
+                cfg.AutoInvertFastPathCoverageThreshold = 0.8;
+                cfg.AutoInvertUseDualEma = true;
+                cfg.AutoInvertFastEmaAlpha = 0.6;
+                cfg.AutoInvertSlowEmaAlpha = 0.15;
+                cfg.AutoInvertEmaDiffThreshold = 0.2;
+                cfg.AutoInvertUseBurstSampling = true;
+                cfg.AutoInvertBurstSampleMs = 200;
+                cfg.AutoInvertBurstDurationMs = 2000;
+                cfg.AutoInvertUseConsecutiveTrigger = true;
+                cfg.AutoInvertUseCoverageGate = true;
+                cfg.AutoInvertUseDirectionalDebounce = true;
+                cfg.AutoInvertUseTargetResponse = false;
+                cfg.AutoInvertTargetResponseMs = 1200;
             }
 
             // Only add all monitors if this is a new config
