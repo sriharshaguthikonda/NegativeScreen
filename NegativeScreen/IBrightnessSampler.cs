@@ -5,7 +5,7 @@ namespace NegativeScreen
 {
     internal interface IBrightnessSampler : IDisposable
     {
-        bool TrySample(string deviceName, out BrightnessSample sample);
+        bool TrySample(string deviceName, double brightPixelThreshold, out BrightnessSample sample);
         IReadOnlyCollection<string> OutputNames { get; }
         void RefreshOutputs();
     }
