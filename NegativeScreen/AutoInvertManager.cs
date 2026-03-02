@@ -29,6 +29,7 @@ namespace NegativeScreen
         {
             if (!settings.Enabled)
                 return;
+            InitializeNow();
             timer = new Timer(OnTimer, null, settings.SampleMs, settings.SampleMs);
         }
 
@@ -140,6 +141,40 @@ namespace NegativeScreen
                     ApplyQueuedChanges(pendingChanges);
                 }
                 Interlocked.Exchange(ref isRunning, 0);
+            }
+        }
+
+        public void InitializeNow()
+        {
+            if (!settings.Enabled)
+                return;
+            string[] deviceNames = overlayManager.GetActiveMonitorDeviceNames();
+            if (deviceNames.Length == 0)
+                return;
+            for (int i = 0; i < deviceNames.Length; i++)
+            {
+                string deviceName = deviceNames[i];
+                if (!sampler.TrySample(deviceName, settings.BrightPixelThreshold, out BrightnessSample sample))
+                    continue;
+                AutoInvertState stateEntry = GetState(deviceName);
+                double effectiveLum = Clamp01(sample.Luminance);
+                double effectiveBrightRatio = Clamp01(sample.BrightRatio);
+                stateEntry.LastLuminance = effectiveLum;
+                stateEntry.LastBrightRatio = effectiveBrightRatio;
+                stateEntry.HasSmoothed = false;
+                UpdateSmoothed(stateEntry, effectiveLum);
+                bool shouldInvert = effectiveLum >= settings.BrightThreshold && effectiveBrightRatio >= settings.BrightCoverageThreshold;
+                overlayManager.SetMonitorOverlayVisible(deviceName, shouldInvert);
+                stateEntry.IsInverted = shouldInvert;
+                stateEntry.LastChangeTick = Environment.TickCount;
+                ResetPending(stateEntry);
+                logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
+                consoleLog.Log(string.Format("INIT device={0} rawLum={1:F4} rawBrightRatio={2:F4} effLum={3:F4} invert={4}",
+                    deviceName,
+                    sample.Luminance,
+                    sample.BrightRatio,
+                    stateEntry.LastLuminance,
+                    shouldInvert ? "1" : "0"));
             }
         }
 

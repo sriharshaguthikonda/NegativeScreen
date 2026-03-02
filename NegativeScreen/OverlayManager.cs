@@ -334,14 +334,18 @@ namespace NegativeScreen
                             overlays.Add(new NegativeOverlay(handle, this.EffectiveMagnifiedCursor));
                     }
 
+                    Config cfg = Settings.Load();
+                    if (cfg.AutoInvertByBrightness)
+                    {
+                        SetMonitorOverlaysVisible(false);
+                    }
                     UpdateCursorVisibility(true);
-                    StartAutoInvertIfEnabled();
+                    StartAutoInvertIfEnabled(cfg);
                     RefreshLoop(overlays);
                 }
 
-                private void StartAutoInvertIfEnabled()
+                private void StartAutoInvertIfEnabled(Config cfg)
                 {
-                    Config cfg = Settings.Load();
                     if (!cfg.AutoInvertByBrightness)
                         return;
                     AutoInvertSettings autoSettings = AutoInvertSettings.FromConfig(cfg);
@@ -623,6 +627,14 @@ namespace NegativeScreen
                         {
                                 ov.Visible = visible;
                                 UpdateCursorVisibility(true);
+                        }
+                }
+
+                private void SetMonitorOverlaysVisible(bool visible)
+                {
+                        foreach (var ov in monitorOverlays.Values)
+                        {
+                                ov.Visible = visible;
                         }
                 }
 
