@@ -20,6 +20,7 @@ namespace NegativeScreen
         private CheckBox magnifiedCursor = new CheckBox();
         private CheckBox softwareCursor = new CheckBox();
         private CheckBox normalizeCursorScheme = new CheckBox();
+        private CheckBox autoInvert = new CheckBox();
         private Button renameButton = new Button();
 
         private Dictionary<string, string> aliases = new Dictionary<string, string>();
@@ -28,11 +29,13 @@ namespace NegativeScreen
         private List<string> monitorKeys = new List<string>();
         private List<string> windowKeys = new List<string>();
         private List<string> selectedKeys = new List<string>();
+        private readonly Config currentConfig;
 
         public Config Result { get; private set; }
 
         public SettingsForm(Config current)
         {
+            currentConfig = current;
             this.Text = "NegativeScreen Settings";
             this.Font = new Font("Segoe UI", 9F);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -110,6 +113,10 @@ namespace NegativeScreen
             normalizeCursorScheme.Checked = current.NormalizeCursorScheme;
             normalizeCursorScheme.Enabled = softwareCursor.Checked;
 
+            autoInvert.Text = "Auto invert by brightness (experimental)";
+            autoInvert.Dock = DockStyle.Bottom;
+            autoInvert.Checked = current.AutoInvertByBrightness;
+
             darkMode.Text = "Dark mode";
             darkMode.Dock = DockStyle.Bottom;
             darkMode.Checked = current.DarkMode;
@@ -128,6 +135,7 @@ namespace NegativeScreen
             this.Controls.Add(magnifiedCursor);
             this.Controls.Add(softwareCursor);
             this.Controls.Add(normalizeCursorScheme);
+            this.Controls.Add(autoInvert);
             this.Controls.Add(darkMode);
 
             this.AcceptButton = applyButton;
@@ -220,6 +228,12 @@ namespace NegativeScreen
             cfg.UseMagnifiedCursor = magnifiedCursor.Checked;
             cfg.ForceSoftwareCursor = softwareCursor.Checked;
             cfg.NormalizeCursorScheme = normalizeCursorScheme.Checked;
+            cfg.AutoInvertByBrightness = autoInvert.Checked;
+            cfg.AutoInvertSampleMs = currentConfig.AutoInvertSampleMs;
+            cfg.AutoInvertBrightThreshold = currentConfig.AutoInvertBrightThreshold;
+            cfg.AutoInvertDarkThreshold = currentConfig.AutoInvertDarkThreshold;
+            cfg.AutoInvertDwellMs = currentConfig.AutoInvertDwellMs;
+            cfg.AutoInvertHideOverlays = currentConfig.AutoInvertHideOverlays;
             Result = cfg;
         }
 
