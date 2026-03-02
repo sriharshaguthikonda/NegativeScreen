@@ -51,6 +51,12 @@ namespace NegativeScreen
                 settings.UseCoverageGate ? "1" : "0",
                 settings.UseDirectionalDebounce ? "1" : "0",
                 settings.UseTargetResponse ? "1" : "0"));
+            consoleLog.Log(string.Format("SETTINGS mediaPause={0} mediaDelta={1:F2} mediaScore={2:F2} mediaAlpha={3:F2} mediaHold={4}",
+                settings.UseMediaPause ? "1" : "0",
+                settings.MediaDeltaThreshold,
+                settings.MediaScoreThreshold,
+                settings.MediaScoreAlpha,
+                settings.MediaHoldMs));
             InitializeNow();
             timer = new Timer(OnTimer, null, currentSampleMs, currentSampleMs);
         }
@@ -113,11 +119,21 @@ namespace NegativeScreen
                     UpdateDualEma(stateEntry, effectiveLum);
                     double delta = hadPrev ? (effectiveLum - prevLum) : 0.0;
                     double emaDiff = stateEntry.FastEma - stateEntry.SlowEma;
+                    bool mediaActive = false;
+                    if (settings.UseMediaPause)
+                    {
+                        stateEntry.MediaScore = UpdateMediaScore(stateEntry.MediaScore, Math.Abs(delta), settings.MediaScoreAlpha);
+                        if (Math.Abs(delta) >= settings.MediaDeltaThreshold || stateEntry.MediaScore >= settings.MediaScoreThreshold)
+                        {
+                            stateEntry.MediaActiveUntilTick = now + settings.MediaHoldMs;
+                        }
+                        mediaActive = stateEntry.MediaActiveUntilTick > 0 && unchecked(now - stateEntry.MediaActiveUntilTick) < 0;
+                    }
                     if (IsHoldActive(stateEntry, now))
                     {
                         ResetPending(stateEntry);
                         logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
-                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, null, true, delta, emaDiff, false, false));
+                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, null, true, delta, emaDiff, false, false, mediaActive));
                         continue;
                     }
                     bool brightCoverage = !settings.UseCoverageGate || effectiveBrightRatio >= settings.BrightCoverageThreshold;
@@ -170,7 +186,14 @@ namespace NegativeScreen
                         stateEntry.PendingInvert = null;
                         ResetPending(stateEntry);
                         logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
-                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, fastDesired, false, delta, emaDiff, fastPathTriggered, dualEmaTriggered));
+                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, fastDesired, false, delta, emaDiff, fastPathTriggered, dualEmaTriggered, mediaActive));
+                        continue;
+                    }
+                    if (mediaActive)
+                    {
+                        ResetPending(stateEntry);
+                        logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
+                        consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, null, false, delta, emaDiff, fastPathTriggered, dualEmaTriggered, mediaActive));
                         continue;
                     }
                     if (!stateEntry.IsInverted && stateEntry.SmoothedLuminance >= settings.BrightThreshold && brightCoverage)
@@ -221,7 +244,7 @@ namespace NegativeScreen
                         ResetPending(stateEntry);
                     }
                     logger.LogSample(deviceName, sample, stateEntry.IsInverted, stateEntry.SmoothedLuminance);
-                    consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, desired, false, delta, emaDiff, fastPathTriggered, dualEmaTriggered));
+                    consoleLog.Log(BuildSampleLog(deviceName, sample, stateEntry, desired, false, delta, emaDiff, fastPathTriggered, dualEmaTriggered, mediaActive));
                 }
             }
             finally
@@ -363,9 +386,9 @@ namespace NegativeScreen
             }
         }
 
-        private string BuildSampleLog(string deviceName, BrightnessSample sample, AutoInvertState state, bool? desired, bool hold, double delta, double emaDiff, bool fastPath, bool dualEma)
+        private string BuildSampleLog(string deviceName, BrightnessSample sample, AutoInvertState state, bool? desired, bool hold, double delta, double emaDiff, bool fastPath, bool dualEma, bool mediaPause)
         {
-            return string.Format("SAMPLE device={0} rawLum={1:F4} rawBrightRatio={2:F4} effLum={3:F4} smoothed={4:F4} delta={5:F4} emaDiff={6:F4} inverted={7} desired={8} streak={9} pending={10} hold={11} fast={12} dualEma={13}",
+            return string.Format("SAMPLE device={0} rawLum={1:F4} rawBrightRatio={2:F4} effLum={3:F4} smoothed={4:F4} delta={5:F4} emaDiff={6:F4} inverted={7} desired={8} streak={9} pending={10} hold={11} fast={12} dualEma={13} media={14}",
                 deviceName,
                 sample.Luminance,
                 sample.BrightRatio,
@@ -379,7 +402,8 @@ namespace NegativeScreen
                 state.PendingInvert.HasValue ? (state.PendingInvert.Value ? "1" : "0") : "-",
                 hold ? "1" : "0",
                 fastPath ? "1" : "0",
-                dualEma ? "1" : "0");
+                dualEma ? "1" : "0",
+                mediaPause ? "1" : "0");
         }
 
         private void StartBurst(long now)
@@ -410,6 +434,13 @@ namespace NegativeScreen
             if (value < 0.0) return 0.0;
             if (value > 1.0) return 1.0;
             return value;
+        }
+
+        private double UpdateMediaScore(double currentScore, double deltaAbs, double alpha)
+        {
+            if (alpha <= 0.0)
+                return currentScore;
+            return alpha * deltaAbs + (1.0 - alpha) * currentScore;
         }
     }
 }

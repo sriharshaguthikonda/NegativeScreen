@@ -29,6 +29,7 @@ namespace NegativeScreen
         private CheckBox autoInvertConsecutive = new CheckBox();
         private CheckBox autoInvertDirectionalDebounce = new CheckBox();
         private CheckBox autoInvertTargetResponse = new CheckBox();
+        private CheckBox autoInvertMediaPause = new CheckBox();
         private Button renameButton = new Button();
 
         private Dictionary<string, string> aliases = new Dictionary<string, string>();
@@ -157,6 +158,10 @@ namespace NegativeScreen
             autoInvertTargetResponse.Dock = DockStyle.Bottom;
             autoInvertTargetResponse.Checked = current.AutoInvertUseTargetResponse;
 
+            autoInvertMediaPause.Text = "Auto invert pause on media motion";
+            autoInvertMediaPause.Dock = DockStyle.Bottom;
+            autoInvertMediaPause.Checked = current.AutoInvertUseMediaPause;
+
             darkMode.Text = "Dark mode";
             darkMode.Dock = DockStyle.Bottom;
             darkMode.Checked = current.DarkMode;
@@ -184,6 +189,7 @@ namespace NegativeScreen
             this.Controls.Add(autoInvertConsecutive);
             this.Controls.Add(autoInvertDirectionalDebounce);
             this.Controls.Add(autoInvertTargetResponse);
+            this.Controls.Add(autoInvertMediaPause);
             this.Controls.Add(darkMode);
 
             this.AcceptButton = applyButton;
@@ -304,6 +310,11 @@ namespace NegativeScreen
             cfg.AutoInvertUseDirectionalDebounce = autoInvertDirectionalDebounce.Checked;
             cfg.AutoInvertUseTargetResponse = autoInvertTargetResponse.Checked;
             cfg.AutoInvertTargetResponseMs = currentConfig.AutoInvertTargetResponseMs;
+            cfg.AutoInvertUseMediaPause = autoInvertMediaPause.Checked;
+            cfg.AutoInvertMediaDeltaThreshold = currentConfig.AutoInvertMediaDeltaThreshold;
+            cfg.AutoInvertMediaScoreThreshold = currentConfig.AutoInvertMediaScoreThreshold;
+            cfg.AutoInvertMediaScoreAlpha = currentConfig.AutoInvertMediaScoreAlpha;
+            cfg.AutoInvertMediaHoldMs = currentConfig.AutoInvertMediaHoldMs;
             cfg.AutoInvertHideOverlays = currentConfig.AutoInvertHideOverlays;
             Result = cfg;
         }

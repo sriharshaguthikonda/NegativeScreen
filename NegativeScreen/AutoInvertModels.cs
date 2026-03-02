@@ -32,6 +32,11 @@ namespace NegativeScreen
         public bool UseDirectionalDebounce;
         public bool UseTargetResponse;
         public int TargetResponseMs;
+        public bool UseMediaPause;
+        public double MediaDeltaThreshold;
+        public double MediaScoreThreshold;
+        public double MediaScoreAlpha;
+        public int MediaHoldMs;
         public bool HideOverlays;
 
         public static AutoInvertSettings FromConfig(Config cfg)
@@ -66,6 +71,11 @@ namespace NegativeScreen
                 UseDirectionalDebounce = cfg.AutoInvertUseDirectionalDebounce,
                 UseTargetResponse = cfg.AutoInvertUseTargetResponse,
                 TargetResponseMs = Math.Max(100, cfg.AutoInvertTargetResponseMs),
+                UseMediaPause = cfg.AutoInvertUseMediaPause,
+                MediaDeltaThreshold = Clamp(cfg.AutoInvertMediaDeltaThreshold, 0.0, 1.0),
+                MediaScoreThreshold = Clamp(cfg.AutoInvertMediaScoreThreshold, 0.0, 1.0),
+                MediaScoreAlpha = Clamp(cfg.AutoInvertMediaScoreAlpha, 0.05, 1.0),
+                MediaHoldMs = Math.Max(0, cfg.AutoInvertMediaHoldMs),
                 HideOverlays = cfg.AutoInvertHideOverlays
             };
             if (settings.UseTargetResponse)
@@ -120,6 +130,8 @@ namespace NegativeScreen
         public bool? LastDesired;
         public int DesiredStreak;
         public long LastChangeTick;
+        public double MediaScore;
+        public long MediaActiveUntilTick;
     }
 
     internal struct BrightnessSample

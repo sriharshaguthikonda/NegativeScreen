@@ -45,6 +45,11 @@ namespace NegativeScreen
         public bool AutoInvertUseDirectionalDebounce = true;
         public bool AutoInvertUseTargetResponse = false;
         public int AutoInvertTargetResponseMs = 1200;
+        public bool AutoInvertUseMediaPause = true;
+        public double AutoInvertMediaDeltaThreshold = 0.06;
+        public double AutoInvertMediaScoreThreshold = 0.04;
+        public double AutoInvertMediaScoreAlpha = 0.3;
+        public int AutoInvertMediaHoldMs = 3000;
         public bool AutoInvertHideOverlays = false;
         public List<MonitorLabel> MonitorLabels = new List<MonitorLabel>();
     }
@@ -70,6 +75,7 @@ namespace NegativeScreen
             bool hasAutoInvertSetting = false;
             bool hasAutoInvertAdvancedSettings = false;
             bool hasAutoInvertStrategySettings = false;
+            bool hasAutoInvertMediaSettings = false;
             if (File.Exists(ConfigPath))
             {
                 try
@@ -83,6 +89,7 @@ namespace NegativeScreen
                         hasAutoInvertSetting = xml.IndexOf("<AutoInvertByBrightness>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasAutoInvertAdvancedSettings = xml.IndexOf("<AutoInvertBrightDwellMs>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasAutoInvertStrategySettings = xml.IndexOf("<AutoInvertUseFastPathDelta>", StringComparison.OrdinalIgnoreCase) >= 0;
+                        hasAutoInvertMediaSettings = xml.IndexOf("<AutoInvertUseMediaPause>", StringComparison.OrdinalIgnoreCase) >= 0;
                     }
                     catch
                     {
@@ -92,6 +99,7 @@ namespace NegativeScreen
                         hasAutoInvertSetting = false;
                         hasAutoInvertAdvancedSettings = false;
                         hasAutoInvertStrategySettings = false;
+                        hasAutoInvertMediaSettings = false;
                     }
                     XmlSerializer xs = new XmlSerializer(typeof(Config));
                     using (FileStream fs = new FileStream(ConfigPath, FileMode.Open))
@@ -136,6 +144,11 @@ namespace NegativeScreen
                 cfg.AutoInvertUseDirectionalDebounce = true;
                 cfg.AutoInvertUseTargetResponse = false;
                 cfg.AutoInvertTargetResponseMs = 1200;
+                cfg.AutoInvertUseMediaPause = true;
+                cfg.AutoInvertMediaDeltaThreshold = 0.06;
+                cfg.AutoInvertMediaScoreThreshold = 0.04;
+                cfg.AutoInvertMediaScoreAlpha = 0.3;
+                cfg.AutoInvertMediaHoldMs = 3000;
                 cfg.AutoInvertHideOverlays = false;
             }
             else if (!hasCursorSetting)
@@ -196,6 +209,19 @@ namespace NegativeScreen
                 cfg.AutoInvertUseDirectionalDebounce = true;
                 cfg.AutoInvertUseTargetResponse = false;
                 cfg.AutoInvertTargetResponseMs = 1200;
+                cfg.AutoInvertUseMediaPause = true;
+                cfg.AutoInvertMediaDeltaThreshold = 0.06;
+                cfg.AutoInvertMediaScoreThreshold = 0.04;
+                cfg.AutoInvertMediaScoreAlpha = 0.3;
+                cfg.AutoInvertMediaHoldMs = 3000;
+            }
+            if (!hasAutoInvertMediaSettings)
+            {
+                cfg.AutoInvertUseMediaPause = true;
+                cfg.AutoInvertMediaDeltaThreshold = 0.06;
+                cfg.AutoInvertMediaScoreThreshold = 0.04;
+                cfg.AutoInvertMediaScoreAlpha = 0.3;
+                cfg.AutoInvertMediaHoldMs = 3000;
             }
 
             // Only add all monitors if this is a new config
