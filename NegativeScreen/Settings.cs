@@ -18,14 +18,14 @@ namespace NegativeScreen
         public bool ForceSoftwareCursor = false;
         public bool NormalizeCursorScheme = true;
         public bool AutoInvertByBrightness = false;
-        public int AutoInvertSampleMs = 1000;
+        public int AutoInvertSampleMs = 500;
         public double AutoInvertBrightThreshold = 0.65;
         public double AutoInvertDarkThreshold = 0.45;
-        public int AutoInvertBrightDwellMs = 3000;
+        public int AutoInvertBrightDwellMs = 1500;
         public int AutoInvertDarkDwellMs = 6000;
-        public int AutoInvertMinHoldMs = 5000;
-        public int AutoInvertRequiredSamples = 3;
-        public double AutoInvertSmoothingAlpha = 0.2;
+        public int AutoInvertMinHoldMs = 2000;
+        public int AutoInvertRequiredSamples = 2;
+        public double AutoInvertSmoothingAlpha = 0.35;
         public double AutoInvertBrightPixelThreshold = 0.8;
         public double AutoInvertBrightCoverageThreshold = 0.35;
         public double AutoInvertDarkCoverageThreshold = 0.15;
@@ -90,14 +90,14 @@ namespace NegativeScreen
                 cfg.ForceSoftwareCursor = false;
                 cfg.NormalizeCursorScheme = true;
                 cfg.AutoInvertByBrightness = false;
-                cfg.AutoInvertSampleMs = 1000;
+                cfg.AutoInvertSampleMs = 500;
                 cfg.AutoInvertBrightThreshold = 0.65;
                 cfg.AutoInvertDarkThreshold = 0.45;
-                cfg.AutoInvertBrightDwellMs = 3000;
+                cfg.AutoInvertBrightDwellMs = 1500;
                 cfg.AutoInvertDarkDwellMs = 6000;
-                cfg.AutoInvertMinHoldMs = 5000;
-                cfg.AutoInvertRequiredSamples = 3;
-                cfg.AutoInvertSmoothingAlpha = 0.2;
+                cfg.AutoInvertMinHoldMs = 2000;
+                cfg.AutoInvertRequiredSamples = 2;
+                cfg.AutoInvertSmoothingAlpha = 0.35;
                 cfg.AutoInvertBrightPixelThreshold = 0.8;
                 cfg.AutoInvertBrightCoverageThreshold = 0.35;
                 cfg.AutoInvertDarkCoverageThreshold = 0.15;
@@ -119,14 +119,14 @@ namespace NegativeScreen
             if (!hasAutoInvertSetting)
             {
                 cfg.AutoInvertByBrightness = false;
-                cfg.AutoInvertSampleMs = 1000;
+                cfg.AutoInvertSampleMs = 500;
                 cfg.AutoInvertBrightThreshold = 0.65;
                 cfg.AutoInvertDarkThreshold = 0.45;
-                cfg.AutoInvertBrightDwellMs = 3000;
+                cfg.AutoInvertBrightDwellMs = 1500;
                 cfg.AutoInvertDarkDwellMs = 6000;
-                cfg.AutoInvertMinHoldMs = 5000;
-                cfg.AutoInvertRequiredSamples = 3;
-                cfg.AutoInvertSmoothingAlpha = 0.2;
+                cfg.AutoInvertMinHoldMs = 2000;
+                cfg.AutoInvertRequiredSamples = 2;
+                cfg.AutoInvertSmoothingAlpha = 0.35;
                 cfg.AutoInvertBrightPixelThreshold = 0.8;
                 cfg.AutoInvertBrightCoverageThreshold = 0.35;
                 cfg.AutoInvertDarkCoverageThreshold = 0.15;
@@ -134,11 +134,11 @@ namespace NegativeScreen
             }
             else if (!hasAutoInvertAdvancedSettings)
             {
-                cfg.AutoInvertBrightDwellMs = 3000;
+                cfg.AutoInvertBrightDwellMs = 1500;
                 cfg.AutoInvertDarkDwellMs = 6000;
-                cfg.AutoInvertMinHoldMs = 5000;
-                cfg.AutoInvertRequiredSamples = 3;
-                cfg.AutoInvertSmoothingAlpha = 0.2;
+                cfg.AutoInvertMinHoldMs = 2000;
+                cfg.AutoInvertRequiredSamples = 2;
+                cfg.AutoInvertSmoothingAlpha = 0.35;
                 cfg.AutoInvertBrightPixelThreshold = 0.8;
                 cfg.AutoInvertBrightCoverageThreshold = 0.35;
                 cfg.AutoInvertDarkCoverageThreshold = 0.15;
