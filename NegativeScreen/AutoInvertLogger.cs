@@ -7,13 +7,16 @@ namespace NegativeScreen
 {
     internal sealed class AutoInvertLogger : IDisposable
     {
+        private const long MaxBytes = 5 * 1024 * 1024;
         private readonly string path;
+        private readonly string backupPath;
         private readonly object sync = new object();
         private bool headerWritten;
 
         public AutoInvertLogger(string baseDirectory)
         {
             path = Path.Combine(baseDirectory, "AutoInvertMetrics.csv");
+            backupPath = Path.Combine(baseDirectory, "AutoInvertMetrics.previous.csv");
         }
 
         public void LogSample(string deviceName, BrightnessSample sample, bool isInverted, double smoothedLuminance)
@@ -22,6 +25,7 @@ namespace NegativeScreen
             {
                 lock (sync)
                 {
+                    RotateIfNeeded();
                     if (!headerWritten)
                     {
                         if (!File.Exists(path))
@@ -55,6 +59,23 @@ namespace NegativeScreen
             catch
             {
                 // best-effort logging
+            }
+        }
+
+        private void RotateIfNeeded()
+        {
+            try
+            {
+                var info = new FileInfo(path);
+                if (!info.Exists || info.Length < MaxBytes)
+                    return;
+                if (File.Exists(backupPath))
+                    File.Delete(backupPath);
+                File.Move(path, backupPath);
+                headerWritten = false;
+            }
+            catch
+            {
             }
         }
 
