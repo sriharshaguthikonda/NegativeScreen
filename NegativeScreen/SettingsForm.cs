@@ -330,9 +330,9 @@ namespace NegativeScreen
             if (totalWidth <= 0)
                 return;
 
-            int desiredRightWidth = 300;
+            int desiredRightWidth = 360;
             int minLeftWidth = 320;
-            int minRightWidth = 240;
+            int minRightWidth = 300;
             int maxLeftWidth = Math.Max(minLeftWidth, totalWidth - minRightWidth);
             int proposedLeftWidth = totalWidth - desiredRightWidth;
             if (proposedLeftWidth < minLeftWidth)
@@ -353,7 +353,7 @@ namespace NegativeScreen
         {
             if (optionsFlow == null || optionsFlow.IsDisposed)
                 return;
-            int width = optionsFlow.ClientSize.Width - optionsFlow.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 8;
+            int width = optionsFlow.ClientSize.Width - optionsFlow.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 20;
             if (width < 240)
                 width = 240;
             foreach (Panel section in optionSections)
@@ -362,7 +362,28 @@ namespace NegativeScreen
                 FlowLayoutPanel flow = section.Tag as FlowLayoutPanel;
                 if (flow != null)
                 {
-                    flow.MaximumSize = new Size(width - section.Padding.Horizontal - 2, 0);
+                    int contentWidth = Math.Max(140, width - section.Padding.Horizontal - 8);
+                    flow.MaximumSize = new Size(contentWidth, 0);
+                    foreach (Control control in flow.Controls)
+                    {
+                        if (control is CheckBox)
+                        {
+                            CheckBox check = (CheckBox)control;
+                            check.AutoSize = true;
+                            check.MaximumSize = new Size(contentWidth - 2, 0);
+                        }
+                        else if (control is Label)
+                        {
+                            Label label = (Label)control;
+                            label.AutoSize = true;
+                            label.MaximumSize = new Size(contentWidth - 2, 0);
+                        }
+                        else if (control is ComboBox)
+                        {
+                            ComboBox combo = (ComboBox)control;
+                            combo.Width = Math.Min(220, Math.Max(140, contentWidth - 2));
+                        }
+                    }
                     section.Height = flow.PreferredSize.Height + 40;
                 }
             }
@@ -523,6 +544,16 @@ namespace NegativeScreen
 
             foreach (Control control in controls)
             {
+                if (control is CheckBox)
+                {
+                    ((CheckBox)control).AutoSize = true;
+                    ((CheckBox)control).MaximumSize = new Size(220, 0);
+                }
+                else if (control is Label)
+                {
+                    ((Label)control).AutoSize = true;
+                    ((Label)control).MaximumSize = new Size(220, 0);
+                }
                 control.Margin = new Padding(0, 2, 0, 4);
                 flow.Controls.Add(control);
             }
