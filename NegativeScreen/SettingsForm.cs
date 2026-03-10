@@ -59,6 +59,8 @@ namespace NegativeScreen
         private readonly Config currentConfig;
         private TabControl tabs = new TabControl();
         private SplitContainer contentSplit = new SplitContainer();
+        private FlowLayoutPanel optionsFlow = new FlowLayoutPanel();
+        private List<Panel> optionSections = new List<Panel>();
         private Panel headerPanel = new Panel();
         private Panel footerPanel = new Panel();
         private Label titleLabel = new Label();
@@ -227,24 +229,22 @@ namespace NegativeScreen
             autoInvertMediaPause.Text = "Pause on media motion";
             autoInvertMediaPause.Checked = current.AutoInvertUseMediaPause;
 
-            FlowLayoutPanel optionsFlow = new FlowLayoutPanel();
             optionsFlow.Dock = DockStyle.Fill;
             optionsFlow.FlowDirection = FlowDirection.TopDown;
             optionsFlow.WrapContents = false;
             optionsFlow.AutoScroll = true;
             optionsFlow.Padding = new Padding(8, 4, 8, 4);
+            optionsFlow.Resize += (s, e) => LayoutOptionSections();
 
-            optionsFlow.Controls.Add(CreateSection("Appearance",
+            Panel appearanceSection = CreateSection("Appearance",
                 new Label { Text = "Theme", AutoSize = true, Margin = new Padding(0, 0, 0, 2) },
                 themeMode,
-                startMinimized));
-
-            optionsFlow.Controls.Add(CreateSection("Cursor",
+                startMinimized);
+            Panel cursorSection = CreateSection("Cursor",
                 magnifiedCursor,
                 softwareCursor,
-                normalizeCursorScheme));
-
-            optionsFlow.Controls.Add(CreateSection("Auto Invert",
+                normalizeCursorScheme);
+            Panel autoInvertSection = CreateSection("Auto Invert",
                 autoInvert,
                 autoInvertFastPathDelta,
                 autoInvertFastPathCoverage,
@@ -254,7 +254,15 @@ namespace NegativeScreen
                 autoInvertConsecutive,
                 autoInvertDirectionalDebounce,
                 autoInvertTargetResponse,
-                autoInvertMediaPause));
+                autoInvertMediaPause);
+
+            optionSections.Add(appearanceSection);
+            optionSections.Add(cursorSection);
+            optionSections.Add(autoInvertSection);
+
+            optionsFlow.Controls.Add(appearanceSection);
+            optionsFlow.Controls.Add(cursorSection);
+            optionsFlow.Controls.Add(autoInvertSection);
 
             contentSplit.Dock = DockStyle.Fill;
             contentSplit.IsSplitterFixed = false;
@@ -309,6 +317,7 @@ namespace NegativeScreen
 
             UpdateAutoInvertControls();
             ApplyTheme();
+            LayoutOptionSections();
             ResumeLayout(true);
         }
 
@@ -336,6 +345,26 @@ namespace NegativeScreen
                 contentSplit.Panel1MinSize = minLeftWidth;
                 contentSplit.Panel2MinSize = minRightWidth;
                 contentSplit.SplitterDistance = proposedLeftWidth;
+            }
+            LayoutOptionSections();
+        }
+
+        private void LayoutOptionSections()
+        {
+            if (optionsFlow == null || optionsFlow.IsDisposed)
+                return;
+            int width = optionsFlow.ClientSize.Width - optionsFlow.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 8;
+            if (width < 240)
+                width = 240;
+            foreach (Panel section in optionSections)
+            {
+                section.Width = width;
+                FlowLayoutPanel flow = section.Tag as FlowLayoutPanel;
+                if (flow != null)
+                {
+                    flow.MaximumSize = new Size(width - section.Padding.Horizontal - 2, 0);
+                    section.Height = flow.PreferredSize.Height + 40;
+                }
             }
         }
 
@@ -474,8 +503,7 @@ namespace NegativeScreen
             section.Padding = new Padding(10);
             section.Margin = new Padding(0, 0, 0, 10);
             section.Width = 280;
-            section.AutoSize = true;
-            section.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            section.AutoSize = false;
 
             Label heading = new Label();
             heading.Text = title;
@@ -501,6 +529,8 @@ namespace NegativeScreen
 
             section.Controls.Add(flow);
             flow.BringToFront();
+            section.Tag = flow;
+            section.Height = flow.PreferredSize.Height + 40;
             return section;
         }
 
