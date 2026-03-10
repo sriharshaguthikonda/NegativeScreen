@@ -58,6 +58,7 @@ namespace NegativeScreen
         private HashSet<string> selectedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Config currentConfig;
         private TabControl tabs = new TabControl();
+        private SplitContainer contentSplit = new SplitContainer();
         private Panel headerPanel = new Panel();
         private Panel footerPanel = new Panel();
         private Label titleLabel = new Label();
@@ -255,10 +256,7 @@ namespace NegativeScreen
                 autoInvertTargetResponse,
                 autoInvertMediaPause));
 
-            SplitContainer contentSplit = new SplitContainer();
             contentSplit.Dock = DockStyle.Fill;
-            contentSplit.SplitterDistance = 610;
-            contentSplit.Panel2MinSize = 280;
             contentSplit.IsSplitterFixed = false;
             contentSplit.FixedPanel = FixedPanel.Panel2;
             contentSplit.Padding = new Padding(12, 8, 12, 6);
@@ -300,13 +298,45 @@ namespace NegativeScreen
 
             applyButton.Click += (s, e) => { CollectResult(); DialogResult = DialogResult.OK; };
 
-            Shown += delegate { LoadWindowsAsync(current.Windows); };
+            Shown += delegate
+            {
+                EnsureSplitLayout();
+                LoadWindowsAsync(current.Windows);
+            };
+            Resize += (s, e) => EnsureSplitLayout();
             SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
             FormClosed += (s, e) => SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
 
             UpdateAutoInvertControls();
             ApplyTheme();
             ResumeLayout(true);
+        }
+
+        private void EnsureSplitLayout()
+        {
+            if (contentSplit.IsDisposed || !contentSplit.IsHandleCreated)
+                return;
+
+            int totalWidth = contentSplit.ClientSize.Width;
+            if (totalWidth <= 0)
+                return;
+
+            int desiredRightWidth = 300;
+            int minLeftWidth = 320;
+            int minRightWidth = 240;
+            int maxLeftWidth = Math.Max(minLeftWidth, totalWidth - minRightWidth);
+            int proposedLeftWidth = totalWidth - desiredRightWidth;
+            if (proposedLeftWidth < minLeftWidth)
+                proposedLeftWidth = minLeftWidth;
+            if (proposedLeftWidth > maxLeftWidth)
+                proposedLeftWidth = maxLeftWidth;
+
+            if (maxLeftWidth >= minLeftWidth && proposedLeftWidth > 0 && proposedLeftWidth < totalWidth)
+            {
+                contentSplit.Panel1MinSize = minLeftWidth;
+                contentSplit.Panel2MinSize = minRightWidth;
+                contentSplit.SplitterDistance = proposedLeftWidth;
+            }
         }
 
         private void LoadWindowsAsync(List<string> current)
