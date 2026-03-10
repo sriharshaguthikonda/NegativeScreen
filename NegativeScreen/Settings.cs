@@ -7,6 +7,13 @@ using System.Runtime.InteropServices;
 
 namespace NegativeScreen
 {
+    public enum ThemeMode
+    {
+        System,
+        Dark,
+        Light
+    }
+
     [Serializable]
     public class Config
     {
@@ -14,6 +21,7 @@ namespace NegativeScreen
         public List<string> Windows = new List<string>();
         public bool StartMinimized = false;
         public bool DarkMode = true;
+        public ThemeMode ThemeMode = ThemeMode.System;
         public bool UseMagnifiedCursor = true;
         public bool ForceSoftwareCursor = false;
         public bool NormalizeCursorScheme = true;
@@ -69,6 +77,8 @@ namespace NegativeScreen
         public static Config Load()
         {
             Config cfg = null;
+            bool hasDarkModeSetting = false;
+            bool hasThemeModeSetting = false;
             bool hasCursorSetting = false;
             bool hasSoftwareCursorSetting = false;
             bool hasNormalizeCursorSchemeSetting = false;
@@ -83,6 +93,8 @@ namespace NegativeScreen
                     try
                     {
                         string xml = File.ReadAllText(ConfigPath);
+                        hasDarkModeSetting = xml.IndexOf("<DarkMode>", StringComparison.OrdinalIgnoreCase) >= 0;
+                        hasThemeModeSetting = xml.IndexOf("<ThemeMode>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasCursorSetting = xml.IndexOf("<UseMagnifiedCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasSoftwareCursorSetting = xml.IndexOf("<ForceSoftwareCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasNormalizeCursorSchemeSetting = xml.IndexOf("<NormalizeCursorScheme>", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -93,6 +105,8 @@ namespace NegativeScreen
                     }
                     catch
                     {
+                        hasDarkModeSetting = false;
+                        hasThemeModeSetting = false;
                         hasCursorSetting = false;
                         hasSoftwareCursorSetting = false;
                         hasNormalizeCursorSchemeSetting = false;
@@ -113,6 +127,7 @@ namespace NegativeScreen
             {
                 cfg = new Config();
                 cfg.DarkMode = true;
+                cfg.ThemeMode = ThemeMode.System;
                 cfg.UseMagnifiedCursor = true;
                 cfg.ForceSoftwareCursor = false;
                 cfg.NormalizeCursorScheme = true;
@@ -156,6 +171,13 @@ namespace NegativeScreen
                 // Default to magnified cursor for older config files.
                 cfg.UseMagnifiedCursor = true;
             }
+            if (!hasThemeModeSetting)
+            {
+                cfg.ThemeMode = hasDarkModeSetting
+                    ? (cfg.DarkMode ? ThemeMode.Dark : ThemeMode.Light)
+                    : ThemeMode.System;
+            }
+            cfg.DarkMode = cfg.ThemeMode == ThemeMode.Dark;
             if (!hasSoftwareCursorSetting)
             {
                 cfg.ForceSoftwareCursor = false;
