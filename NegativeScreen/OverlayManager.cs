@@ -565,14 +565,14 @@ namespace NegativeScreen
                         if (scanDue)
                         {
                                 lastCopyQScanTick = now;
-                                HashSet<string> detected = DetectCopyQOverlappingMonitors();
-                                if (detected.Count > 0)
+                                string detectedMonitor = DetectCopyQPopupMonitor();
+                                if (!string.IsNullOrEmpty(detectedMonitor))
                                 {
                                         copyQSuppressUntilTick = unchecked(now + COPYQ_SUPPRESS_HOLD_MS);
-                                        if (!copyQSuppressedMonitors.SetEquals(detected))
+                                        if (copyQSuppressedMonitors.Count != 1 || !copyQSuppressedMonitors.Contains(detectedMonitor))
                                         {
                                                 copyQSuppressedMonitors.Clear();
-                                                copyQSuppressedMonitors.UnionWith(detected);
+                                                copyQSuppressedMonitors.Add(detectedMonitor);
                                                 changed = true;
                                         }
                                 }
@@ -590,12 +590,11 @@ namespace NegativeScreen
                         }
                 }
 
-                private HashSet<string> DetectCopyQOverlappingMonitors()
+                private string DetectCopyQPopupMonitor()
                 {
-                        HashSet<string> result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                         if (monitorOverlays.Count == 0)
                         {
-                                return result;
+                                return null;
                         }
 
                         Process[] copyqProcesses;
@@ -605,12 +604,12 @@ namespace NegativeScreen
                         }
                         catch
                         {
-                                return result;
+                                return null;
                         }
 
                         if (copyqProcesses == null || copyqProcesses.Length == 0)
                         {
-                                return result;
+                                return null;
                         }
 
                         HashSet<uint> processIds = new HashSet<uint>();
@@ -634,8 +633,14 @@ namespace NegativeScreen
 
                         if (processIds.Count == 0)
                         {
-                                return result;
+                                return null;
                         }
+
+                        Point cursor = Cursor.Position;
+                        Rectangle bestCursorRect = Rectangle.Empty;
+                        long bestCursorArea = long.MaxValue;
+                        Rectangle nearestRect = Rectangle.Empty;
+                        double nearestDistanceSquared = double.MaxValue;
 
                         NativeMethods.EnumWindows(delegate (IntPtr hwnd, IntPtr lParam)
                         {
@@ -665,18 +670,26 @@ namespace NegativeScreen
                                                 return true;
                                         }
 
-                                        foreach (var entry in monitorOverlays)
+                                        long area = (long)windowBounds.Width * windowBounds.Height;
+                                        if (windowBounds.Contains(cursor))
                                         {
-                                                NegativeOverlay overlay = entry.Value;
-                                                if (overlay == null || overlay.IsDisposed)
+                                                if (area < bestCursorArea)
                                                 {
-                                                        continue;
+                                                        bestCursorArea = area;
+                                                        bestCursorRect = windowBounds;
                                                 }
+                                                return true;
+                                        }
 
-                                                if (windowBounds.IntersectsWith(overlay.Bounds))
-                                                {
-                                                        result.Add(entry.Key);
-                                                }
+                                        int centerX = windowBounds.Left + (windowBounds.Width / 2);
+                                        int centerY = windowBounds.Top + (windowBounds.Height / 2);
+                                        long dx = (long)centerX - cursor.X;
+                                        long dy = (long)centerY - cursor.Y;
+                                        double distanceSquared = (double)(dx * dx + dy * dy);
+                                        if (distanceSquared < nearestDistanceSquared)
+                                        {
+                                                nearestDistanceSquared = distanceSquared;
+                                                nearestRect = windowBounds;
                                         }
                                 }
                                 catch
@@ -686,7 +699,37 @@ namespace NegativeScreen
                                 return true;
                         }, IntPtr.Zero);
 
-                        return result;
+                        Rectangle targetRect = bestCursorRect != Rectangle.Empty ? bestCursorRect : nearestRect;
+                        if (targetRect == Rectangle.Empty)
+                        {
+                                return null;
+                        }
+
+                        string selectedMonitor = null;
+                        long selectedIntersectionArea = 0;
+                        foreach (var entry in monitorOverlays)
+                        {
+                                NegativeOverlay overlay = entry.Value;
+                                if (overlay == null || overlay.IsDisposed)
+                                {
+                                        continue;
+                                }
+
+                                Rectangle intersect = Rectangle.Intersect(targetRect, overlay.Bounds);
+                                if (intersect.Width <= 0 || intersect.Height <= 0)
+                                {
+                                        continue;
+                                }
+
+                                long intersectionArea = (long)intersect.Width * intersect.Height;
+                                if (intersectionArea > selectedIntersectionArea)
+                                {
+                                        selectedIntersectionArea = intersectionArea;
+                                        selectedMonitor = entry.Key;
+                                }
+                        }
+
+                        return selectedMonitor;
                 }
 
                 private bool IsMonitorTemporarilySuppressed(string deviceName)
