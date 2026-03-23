@@ -22,6 +22,7 @@ namespace NegativeScreen
         public bool StartMinimized = false;
         public bool DarkMode = true;
         public ThemeMode ThemeMode = ThemeMode.System;
+        public bool CopyQCompatibilityMode = true;
         public bool UseMagnifiedCursor = true;
         public bool ForceSoftwareCursor = false;
         public bool NormalizeCursorScheme = true;
@@ -79,6 +80,7 @@ namespace NegativeScreen
             Config cfg = null;
             bool hasDarkModeSetting = false;
             bool hasThemeModeSetting = false;
+            bool hasCopyQCompatibilitySetting = false;
             bool hasCursorSetting = false;
             bool hasSoftwareCursorSetting = false;
             bool hasNormalizeCursorSchemeSetting = false;
@@ -95,6 +97,7 @@ namespace NegativeScreen
                         string xml = File.ReadAllText(ConfigPath);
                         hasDarkModeSetting = xml.IndexOf("<DarkMode>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasThemeModeSetting = xml.IndexOf("<ThemeMode>", StringComparison.OrdinalIgnoreCase) >= 0;
+                        hasCopyQCompatibilitySetting = xml.IndexOf("<CopyQCompatibilityMode>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasCursorSetting = xml.IndexOf("<UseMagnifiedCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasSoftwareCursorSetting = xml.IndexOf("<ForceSoftwareCursor>", StringComparison.OrdinalIgnoreCase) >= 0;
                         hasNormalizeCursorSchemeSetting = xml.IndexOf("<NormalizeCursorScheme>", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -107,6 +110,7 @@ namespace NegativeScreen
                     {
                         hasDarkModeSetting = false;
                         hasThemeModeSetting = false;
+                        hasCopyQCompatibilitySetting = false;
                         hasCursorSetting = false;
                         hasSoftwareCursorSetting = false;
                         hasNormalizeCursorSchemeSetting = false;
@@ -128,6 +132,7 @@ namespace NegativeScreen
                 cfg = new Config();
                 cfg.DarkMode = true;
                 cfg.ThemeMode = ThemeMode.System;
+                cfg.CopyQCompatibilityMode = true;
                 cfg.UseMagnifiedCursor = true;
                 cfg.ForceSoftwareCursor = false;
                 cfg.NormalizeCursorScheme = true;
@@ -178,6 +183,10 @@ namespace NegativeScreen
                     : ThemeMode.System;
             }
             cfg.DarkMode = cfg.ThemeMode == ThemeMode.Dark;
+            if (!hasCopyQCompatibilitySetting)
+            {
+                cfg.CopyQCompatibilityMode = true;
+            }
             if (!hasSoftwareCursorSetting)
             {
                 cfg.ForceSoftwareCursor = false;

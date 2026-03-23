@@ -55,6 +55,8 @@ namespace NegativeScreen
 		private const int BACKGROUND_SLEEP_TIME = 50;
 		private const int TOPMOST_REFRESH_INTERVAL_MS = 250;
 		private const int PAUSE_SLEEP_TIME = 100;
+                private const int COPYQ_SCAN_INTERVAL_MS = 120;
+                private const int COPYQ_SUPPRESS_HOLD_MS = 400;
 
 		/// <summary>
 		/// control whether the main loop is paused or not.
@@ -78,8 +80,13 @@ namespace NegativeScreen
         private EventHandler displaySettingsHandler;
         private bool useMagnifiedCursor;
         private bool isCursorHidden;
-        private bool forceSoftwareCursor;
-        private bool normalizeCursorScheme;
+                private bool forceSoftwareCursor;
+                private bool normalizeCursorScheme;
+        private bool copyQCompatibilityMode;
+        private readonly HashSet<string> copyQSuppressedMonitors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, bool> monitorDesiredVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private int copyQSuppressUntilTick;
+        private int lastCopyQScanTick;
         private Dictionary<string, string> savedCursorValues;
         private bool EffectiveMagnifiedCursor
         {
@@ -88,14 +95,16 @@ namespace NegativeScreen
         private uint savedMouseTrails;
         private bool hasSavedMouseTrails;
 
-                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor, bool forceSoftwareCursor, bool normalizeCursorScheme)
+                public OverlayManager(List<string> monitors, List<string> windows, bool useMagnifiedCursor, bool forceSoftwareCursor, bool normalizeCursorScheme, bool copyQCompatibilityMode)
                 {
                         this.selectedMonitors = new List<string>(monitors);
                         this.selectedWindows = new List<string>(windows);
                         this.useMagnifiedCursor = useMagnifiedCursor;
                         this.forceSoftwareCursor = forceSoftwareCursor;
                         this.normalizeCursorScheme = normalizeCursorScheme;
+                        this.copyQCompatibilityMode = copyQCompatibilityMode;
                         this.lastTopmostRefreshTick = Environment.TickCount;
+                        this.lastCopyQScanTick = Environment.TickCount;
 
                         contextMenu = new System.Windows.Forms.ContextMenuStrip();
                         foreach (var item in Screen.AllScreens)
@@ -128,6 +137,7 @@ namespace NegativeScreen
                                                         this.useMagnifiedCursor = form.Result.UseMagnifiedCursor;
                                                         this.forceSoftwareCursor = form.Result.ForceSoftwareCursor;
                                                         this.normalizeCursorScheme = form.Result.NormalizeCursorScheme;
+                                                        SetCopyQCompatibilityMode(form.Result.CopyQCompatibilityMode);
                                                         Settings.Save(form.Result);
                                                         foreach (ToolStripItem item in this.contextMenu.Items)
                                                         {
@@ -262,6 +272,9 @@ namespace NegativeScreen
                     }
                     overlays = new List<NegativeOverlay>();
                     monitorOverlays.Clear();
+                    monitorDesiredVisibility.Clear();
+                    copyQSuppressedMonitors.Clear();
+                    copyQSuppressUntilTick = 0;
 
                     // Get current monitor configuration
                     var currentScreens = Screen.AllScreens.ToDictionary(s => s.DeviceName, s => s);
@@ -323,6 +336,7 @@ namespace NegativeScreen
                             var overlay = new NegativeOverlay(screen, this.EffectiveMagnifiedCursor);
                             overlays.Add(overlay);
                             monitorOverlays[screen.DeviceName] = overlay;
+                            monitorDesiredVisibility[screen.DeviceName] = true;
                         }
                     }
 
@@ -437,6 +451,8 @@ namespace NegativeScreen
 					break;
 				}
 
+                                UpdateCopyQCompatibility();
+
 				bool refreshTopmost = false;
 				int now = Environment.TickCount;
 				if (unchecked(now - lastTopmostRefreshTick) >= TOPMOST_REFRESH_INTERVAL_MS)
@@ -524,6 +540,195 @@ namespace NegativeScreen
 			}
 		}
 
+                private void SetCopyQCompatibilityMode(bool enabled)
+                {
+                        copyQCompatibilityMode = enabled;
+                        if (!enabled)
+                        {
+                                copyQSuppressedMonitors.Clear();
+                                copyQSuppressUntilTick = 0;
+                        }
+                        ApplyAllMonitorOverlayVisibility();
+                }
+
+                private void UpdateCopyQCompatibility()
+                {
+                        if (!copyQCompatibilityMode)
+                        {
+                                return;
+                        }
+
+                        int now = Environment.TickCount;
+                        bool scanDue = unchecked(now - lastCopyQScanTick) >= COPYQ_SCAN_INTERVAL_MS;
+                        bool changed = false;
+
+                        if (scanDue)
+                        {
+                                lastCopyQScanTick = now;
+                                HashSet<string> detected = DetectCopyQOverlappingMonitors();
+                                if (detected.Count > 0)
+                                {
+                                        copyQSuppressUntilTick = unchecked(now + COPYQ_SUPPRESS_HOLD_MS);
+                                        if (!copyQSuppressedMonitors.SetEquals(detected))
+                                        {
+                                                copyQSuppressedMonitors.Clear();
+                                                copyQSuppressedMonitors.UnionWith(detected);
+                                                changed = true;
+                                        }
+                                }
+                        }
+
+                        if (copyQSuppressedMonitors.Count > 0 && unchecked(now - copyQSuppressUntilTick) >= 0)
+                        {
+                                copyQSuppressedMonitors.Clear();
+                                changed = true;
+                        }
+
+                        if (changed)
+                        {
+                                ApplyAllMonitorOverlayVisibility();
+                        }
+                }
+
+                private HashSet<string> DetectCopyQOverlappingMonitors()
+                {
+                        HashSet<string> result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (monitorOverlays.Count == 0)
+                        {
+                                return result;
+                        }
+
+                        Process[] copyqProcesses;
+                        try
+                        {
+                                copyqProcesses = Process.GetProcessesByName("copyq");
+                        }
+                        catch
+                        {
+                                return result;
+                        }
+
+                        if (copyqProcesses == null || copyqProcesses.Length == 0)
+                        {
+                                return result;
+                        }
+
+                        HashSet<uint> processIds = new HashSet<uint>();
+                        foreach (Process process in copyqProcesses)
+                        {
+                                try
+                                {
+                                        if (!process.HasExited)
+                                        {
+                                                processIds.Add((uint)process.Id);
+                                        }
+                                }
+                                catch
+                                {
+                                }
+                                finally
+                                {
+                                        process.Dispose();
+                                }
+                        }
+
+                        if (processIds.Count == 0)
+                        {
+                                return result;
+                        }
+
+                        NativeMethods.EnumWindows(delegate (IntPtr hwnd, IntPtr lParam)
+                        {
+                                try
+                                {
+                                        if (!NativeMethods.IsWindowVisible(hwnd))
+                                        {
+                                                return true;
+                                        }
+
+                                        uint windowProcessId;
+                                        NativeMethods.GetWindowThreadProcessId(hwnd, out windowProcessId);
+                                        if (!processIds.Contains(windowProcessId))
+                                        {
+                                                return true;
+                                        }
+
+                                        RECT rect;
+                                        if (!NativeMethods.GetWindowRect(hwnd, out rect))
+                                        {
+                                                return true;
+                                        }
+
+                                        Rectangle windowBounds = Rectangle.FromLTRB(rect.left, rect.top, rect.right, rect.bottom);
+                                        if (windowBounds.Width <= 1 || windowBounds.Height <= 1)
+                                        {
+                                                return true;
+                                        }
+
+                                        foreach (var entry in monitorOverlays)
+                                        {
+                                                NegativeOverlay overlay = entry.Value;
+                                                if (overlay == null || overlay.IsDisposed)
+                                                {
+                                                        continue;
+                                                }
+
+                                                if (windowBounds.IntersectsWith(overlay.Bounds))
+                                                {
+                                                        result.Add(entry.Key);
+                                                }
+                                        }
+                                }
+                                catch
+                                {
+                                }
+
+                                return true;
+                        }, IntPtr.Zero);
+
+                        return result;
+                }
+
+                private bool IsMonitorTemporarilySuppressed(string deviceName)
+                {
+                        return copyQCompatibilityMode
+                                && copyQSuppressedMonitors.Contains(deviceName)
+                                && unchecked(Environment.TickCount - copyQSuppressUntilTick) < 0;
+                }
+
+                private void ApplyAllMonitorOverlayVisibility()
+                {
+                        foreach (string deviceName in monitorOverlays.Keys.ToList())
+                        {
+                                ApplyMonitorOverlayVisibility(deviceName);
+                        }
+                }
+
+                private void ApplyMonitorOverlayVisibility(string deviceName)
+                {
+                        if (string.IsNullOrEmpty(deviceName))
+                        {
+                                return;
+                        }
+
+                        if (!monitorOverlays.TryGetValue(deviceName, out var overlay) || overlay == null || overlay.IsDisposed)
+                        {
+                                return;
+                        }
+
+                        bool desired = true;
+                        if (monitorDesiredVisibility.TryGetValue(deviceName, out bool visible))
+                        {
+                                desired = visible;
+                        }
+
+                        bool effectiveVisible = desired && !IsMonitorTemporarilySuppressed(deviceName);
+                        if (overlay.Visible != effectiveVisible)
+                        {
+                                overlay.Visible = effectiveVisible;
+                        }
+                }
+
                 private void UnregisterHotKeys()
                 {
                         NativeMethods.UnregisterHotKey(this.Handle, HALT_HOTKEY_ID);
@@ -546,11 +751,26 @@ namespace NegativeScreen
 
                 private void SetOverlaysVisible(bool visible)
                 {
+                        if (!visible)
+                        {
+                                foreach (var ov in overlays)
+                                {
+                                        ov.Visible = false;
+                                }
+                                UpdateCursorVisibility(false);
+                                return;
+                        }
+
+                        HashSet<NegativeOverlay> monitorSet = new HashSet<NegativeOverlay>(monitorOverlays.Values);
                         foreach (var ov in overlays)
                         {
-                                ov.Visible = visible;
+                                if (!monitorSet.Contains(ov))
+                                {
+                                        ov.Visible = true;
+                                }
                         }
-                        UpdateCursorVisibility(visible);
+                        ApplyAllMonitorOverlayVisibility();
+                        UpdateCursorVisibility(true);
                 }
 
                 internal List<Tuple<NegativeOverlay, bool>> HideOverlaysForAutoInvert()
@@ -609,8 +829,10 @@ namespace NegativeScreen
                         }
                         if (string.IsNullOrEmpty(deviceName))
                                 return false;
+                        if (monitorDesiredVisibility.TryGetValue(deviceName, out bool desired))
+                                return desired;
                         if (monitorOverlays.TryGetValue(deviceName, out var ov))
-                                return ov.Visible;
+                                return ov != null && ov.Visible;
                         return false;
                 }
 
@@ -625,17 +847,19 @@ namespace NegativeScreen
                                 return;
                         if (monitorOverlays.TryGetValue(deviceName, out var ov))
                         {
-                                ov.Visible = visible;
+                                monitorDesiredVisibility[deviceName] = visible;
+                                ApplyMonitorOverlayVisibility(deviceName);
                                 UpdateCursorVisibility(true);
                         }
                 }
 
                 private void SetMonitorOverlaysVisible(bool visible)
                 {
-                        foreach (var ov in monitorOverlays.Values)
+                        foreach (string deviceName in monitorOverlays.Keys.ToList())
                         {
-                                ov.Visible = visible;
+                                monitorDesiredVisibility[deviceName] = visible;
                         }
+                        ApplyAllMonitorOverlayVisibility();
                 }
 
                 private void UpdateCursorVisibility(bool overlaysVisible)

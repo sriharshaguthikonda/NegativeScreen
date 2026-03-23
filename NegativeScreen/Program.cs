@@ -67,7 +67,13 @@ To avoid known bugs relative to the used APIs, please instead run the 64 bits co
                                                 return;
                                 }
                         }
-                        OverlayManager manager = new OverlayManager(new List<string>(cfg.Monitors), new List<string>(cfg.Windows), cfg.UseMagnifiedCursor, cfg.ForceSoftwareCursor, cfg.NormalizeCursorScheme);
+                        OverlayManager manager = new OverlayManager(
+                                new List<string>(cfg.Monitors),
+                                new List<string>(cfg.Windows),
+                                cfg.UseMagnifiedCursor,
+                                cfg.ForceSoftwareCursor,
+                                cfg.NormalizeCursorScheme,
+                                cfg.CopyQCompatibilityMode);
                         if (cfg.StartMinimized)
                         {
                                 manager.WindowState = FormWindowState.Minimized;

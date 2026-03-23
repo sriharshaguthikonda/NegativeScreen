@@ -38,6 +38,7 @@ namespace NegativeScreen
         private CheckBox magnifiedCursor = new CheckBox();
         private CheckBox softwareCursor = new CheckBox();
         private CheckBox normalizeCursorScheme = new CheckBox();
+        private CheckBox copyQCompatibility = new CheckBox();
         private CheckBox autoInvert = new CheckBox();
         private CheckBox autoInvertFastPathDelta = new CheckBox();
         private CheckBox autoInvertFastPathCoverage = new CheckBox();
@@ -157,6 +158,9 @@ namespace NegativeScreen
             startMinimized.Text = "Open minimized on startup";
             startMinimized.Checked = current.StartMinimized;
 
+            copyQCompatibility.Text = "CopyQ compatibility mode (show CopyQ popup above overlay)";
+            copyQCompatibility.Checked = current.CopyQCompatibilityMode;
+
             themeMode.DropDownStyle = ComboBoxStyle.DropDownList;
             themeMode.Items.AddRange(new object[] { "System", "Dark", "Light" });
             themeMode.Width = 140;
@@ -239,6 +243,7 @@ namespace NegativeScreen
             Panel appearanceSection = CreateSection("Appearance",
                 new Label { Text = "Theme", AutoSize = true, Margin = new Padding(0, 0, 0, 2) },
                 themeMode,
+                copyQCompatibility,
                 startMinimized);
             Panel cursorSection = CreateSection("Cursor",
                 magnifiedCursor,
@@ -477,6 +482,7 @@ namespace NegativeScreen
             cfg.StartMinimized = startMinimized.Checked;
             cfg.ThemeMode = GetSelectedThemeMode();
             cfg.DarkMode = cfg.ThemeMode == ThemeMode.Dark || (cfg.ThemeMode == ThemeMode.System && IsSystemDarkTheme());
+            cfg.CopyQCompatibilityMode = copyQCompatibility.Checked;
             cfg.UseMagnifiedCursor = magnifiedCursor.Checked;
             cfg.ForceSoftwareCursor = softwareCursor.Checked;
             cfg.NormalizeCursorScheme = normalizeCursorScheme.Checked;
