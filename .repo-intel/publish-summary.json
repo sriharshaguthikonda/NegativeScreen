@@ -1,0 +1,74 @@
+﻿{
+    "schemaVersion":  "repo-map-artifact-branch/v1",
+    "repo":  "sriharshaguthikonda/NegativeScreen",
+    "generatedAt":  "2026-06-01T06:06:19.6390960Z",
+    "source":  "Repo_maps GitHub footprint publish runner",
+    "publishBranch":  "repo-intel-artifacts",
+    "mapCount":  9,
+    "totalBytes":  1942065,
+    "maps":  [
+                 {
+                     "name":  "Custom-multi-monitor-tray-monitor-details",
+                     "ref":  "refs/remotes/origin/Custom-multi-monitor-tray-monitor-details",
+                     "commit":  "d0b845a9349bf1e5bd8080a6b340fe12eb50990b",
+                     "path":  ".repo-intel/branches/remote-origin/custom-multi-monitor-tray-monitor-details__d0b845a9349b/repo-map-full.json",
+                     "bytes":  193893
+                 },
+                 {
+                     "name":  "auto-invert-dxgi",
+                     "ref":  "refs/remotes/origin/auto-invert-dxgi",
+                     "commit":  "fdec7efafa7ee0104b8d264b3490b35088f17c56",
+                     "path":  ".repo-intel/branches/remote-origin/auto-invert-dxgi__fdec7efafa7e/repo-map-full.json",
+                     "bytes":  238583
+                 },
+                 {
+                     "name":  "auto-invert-gdi",
+                     "ref":  "refs/remotes/origin/auto-invert-gdi",
+                     "commit":  "9eb3188077cce32198e4cf1de99b0222eac9f252",
+                     "path":  ".repo-intel/branches/remote-origin/auto-invert-gdi__9eb3188077cc/repo-map-full.json",
+                     "bytes":  288077
+                 },
+                 {
+                     "name":  "brightness_detection",
+                     "ref":  "refs/remotes/origin/brightness_detection",
+                     "commit":  "cb6ae0ea25ea61b1f68de8161aa290fcc6616ad9",
+                     "path":  ".repo-intel/branches/remote-origin/brightness-detection__cb6ae0ea25ea/repo-map-full.json",
+                     "bytes":  135990
+                 },
+                 {
+                     "name":  "brightness_detection_working",
+                     "ref":  "refs/remotes/origin/brightness_detection_working",
+                     "commit":  "a89c7d480beb5247e6059905ad2062cae174f3f6",
+                     "path":  ".repo-intel/branches/remote-origin/brightness-detection-working__a89c7d480beb/repo-map-full.json",
+                     "bytes":  217820
+                 },
+                 {
+                     "name":  "cursor-scheme-windows-black",
+                     "ref":  "refs/remotes/origin/cursor-scheme-windows-black",
+                     "commit":  "5c23ee3005cc1e904a5dc274f087190ee9fda59d",
+                     "path":  ".repo-intel/branches/remote-origin/cursor-scheme-windows-black__5c23ee3005cc/repo-map-full.json",
+                     "bytes":  194146
+                 },
+                 {
+                     "name":  "custom-cursor-overlay",
+                     "ref":  "refs/remotes/origin/custom-cursor-overlay",
+                     "commit":  "fdb46f95e41690d4f2f54e1a179891ab06afc8cb",
+                     "path":  ".repo-intel/branches/remote-origin/custom-cursor-overlay__fdb46f95e416/repo-map-full.json",
+                     "bytes":  202314
+                 },
+                 {
+                     "name":  "custom_multi_monitor_support",
+                     "ref":  "refs/remotes/origin/custom_multi_monitor_support",
+                     "commit":  "efb905cb475c83be344207df757ea4b77c76b280",
+                     "path":  ".repo-intel/branches/remote-origin/custom-multi-monitor-support__efb905cb475c/repo-map-full.json",
+                     "bytes":  140237
+                 },
+                 {
+                     "name":  "master",
+                     "ref":  "refs/remotes/origin/master",
+                     "commit":  "b48b5d26b7e7674011b270408515475ad843e8c2",
+                     "path":  ".repo-intel/branches/remote-origin/master__b48b5d26b7e7/repo-map-full.json",
+                     "bytes":  300880
+                 }
+             ]
+}
